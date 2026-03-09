@@ -1,0 +1,6 @@
+AGENTS.md
+dev_notes/
+.coverage
+.pytest_cache/
+__pycache__/
+*.pyc
