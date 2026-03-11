@@ -63,6 +63,7 @@ def test_actions_execute_successfully() -> None:
 
     assert goto_result.ok is True
     assert goto_result.details["current_url"] == "https://example.test/form"
+    assert goto_result.details["resolved_url"] == "https://example.test/form"
     assert click_result.ok is True
     assert page.clicked == ["#submit"]
     assert type_result.ok is True
@@ -144,3 +145,14 @@ def test_missing_page_provider_raises() -> None:
         assert "no page" in str(exc).lower()
     else:  # pragma: no cover - explicit failure path
         raise AssertionError("Expected ActionAPIError")
+
+
+def test_goto_uses_url_resolver() -> None:
+    page = FakePage()
+    actions = ActionAPI(lambda: page, url_resolver=lambda url: f"https://resolved.test/{url}")
+
+    result = actions.goto("fixture://page")
+
+    assert result.ok is True
+    assert page.goto_urls == ["https://resolved.test/fixture://page"]
+    assert result.details["resolved_url"] == "https://resolved.test/fixture://page"

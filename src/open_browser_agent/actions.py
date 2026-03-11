@@ -19,8 +19,13 @@ class ActionAPIError(RuntimeError):
 class ActionAPI:
     """Structured browser actions used by the executor."""
 
-    def __init__(self, page_provider: Callable[[], Any]) -> None:
+    def __init__(
+        self,
+        page_provider: Callable[[], Any],
+        url_resolver: Callable[[str], str] | None = None,
+    ) -> None:
         self._page_provider = page_provider
+        self._url_resolver = url_resolver or (lambda url: url)
 
     def _page(self) -> Any:
         page = self._page_provider()
@@ -30,11 +35,21 @@ class ActionAPI:
 
     def goto(self, url: str) -> ActionResult:
         page = self._page()
+        resolved_url = self._url_resolver(url)
         try:
-            page.goto(url)
-            return ActionResult(ok=True, action="goto", details={"url": url, "current_url": page.url})
+            page.goto(resolved_url)
+            return ActionResult(
+                ok=True,
+                action="goto",
+                details={"url": url, "resolved_url": resolved_url, "current_url": page.url},
+            )
         except Exception as exc:
-            return ActionResult(ok=False, action="goto", error=str(exc), details={"url": url})
+            return ActionResult(
+                ok=False,
+                action="goto",
+                error=str(exc),
+                details={"url": url, "resolved_url": resolved_url},
+            )
 
     def click(self, selector: str) -> ActionResult:
         page = self._page()

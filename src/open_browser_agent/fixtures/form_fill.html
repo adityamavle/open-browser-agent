@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Sandbox Form</title>
+  </head>
+  <body>
+    <main>
+      <h1>Sandbox Form</h1>
+      <form id="demo-form">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text">
+        <button id="submit" type="submit">Submit</button>
+      </form>
+    </main>
+    <script>
+      document.querySelector("#demo-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = document.querySelector("#name").value.trim() || "friend";
+        document.body.innerHTML = `
+          <main>
+            <h1>Submission complete</h1>
+            <p id="success">Thanks, ${name}!</p>
+          </main>
+        `;
+      });
+    </script>
+  </body>
+</html>

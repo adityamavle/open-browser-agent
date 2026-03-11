@@ -78,4 +78,4 @@ class BrowserSession:
             raise BrowserSessionError(
                 "Playwright is not installed. Install requirements and run 'playwright install chromium'."
             ) from exc
-        return sync_playwright
+        return sync_playwright()

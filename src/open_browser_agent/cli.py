@@ -4,9 +4,17 @@ import argparse
 import json
 from pathlib import Path
 
+from open_browser_agent.actions import ActionAPI
+from open_browser_agent.browser import BrowserSession, BrowserSessionError
+from open_browser_agent.executor import Executor
+from open_browser_agent.observer import Observer
 from open_browser_agent.replay import replay_trace
 from open_browser_agent.tasks.registry import TASKS, find_task_by_goal
 from open_browser_agent.trace import TraceRecorder
+from open_browser_agent.verifier import Verifier
+
+
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -51,6 +59,7 @@ def handle_run(goal: str, trace_dir: str) -> int:
         )
         return 1
 
+    recorder.set_steps(trace, task.steps)
     recorder.append_event(
         trace,
         {
@@ -61,18 +70,42 @@ def handle_run(goal: str, trace_dir: str) -> int:
         },
     )
 
-    # The browser-backed executor path is implemented behind injected dependencies.
-    # The CLI keeps a dry-run mode until the Playwright runtime is wired.
-    recorder.finish_run(
-        trace,
-        success=False,
-        reason="Task resolved. Browser execution is not wired into the CLI yet.",
-    )
-    print(
-        f"Resolved example task '{task.task_id}'. "
-        f"Trace initialized at {trace.trace_path}."
-    )
-    return 0
+    try:
+        with BrowserSession() as session:
+            actions = ActionAPI(lambda: session.page, url_resolver=_resolve_url)
+            observer = Observer(lambda: session.page)
+            executor = Executor(actions=actions, observer=observer, trace_recorder=recorder, trace=trace)
+
+            results = executor.run_steps(task.steps)
+            first_failure = next((result for result in results if not result.success), None)
+            if first_failure is not None:
+                recorder.finish_run(trace, success=False, reason=first_failure.message)
+                print(
+                    f"Task '{task.task_id}' failed during execution. "
+                    f"Trace written to {trace.trace_path}."
+                )
+                return 1
+
+            verification = Verifier(task.verification_rules).verify(observer.capture())
+            recorder.finish_run(trace, success=verification.success, reason=verification.reason)
+            print(
+                f"Task '{task.task_id}' completed with success={verification.success}. "
+                f"Trace written to {trace.trace_path}."
+            )
+            return 0 if verification.success else 1
+    except BrowserSessionError as exc:
+        recorder.finish_run(trace, success=False, reason=str(exc))
+        print(f"Browser session error: {exc}. Trace written to {trace.trace_path}.")
+        return 1
+
+
+def _resolve_url(url: str) -> str:
+    if not url.startswith("fixture://"):
+        return url
+
+    fixture_name = url.removeprefix("fixture://")
+    fixture_path = FIXTURE_DIR / fixture_name
+    return fixture_path.resolve().as_uri()
 
 
 def handle_replay(trace_path: str) -> int:

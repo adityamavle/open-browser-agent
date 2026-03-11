@@ -4,3 +4,6 @@ dev_notes/
 .pytest_cache/
 __pycache__/
 *.pyc
+build/
+*.egg-info/
+traces_e2e/

@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from open_browser_agent.schemas.step import Step
+
 
 @dataclass(slots=True)
 class RunTrace:
@@ -54,6 +56,20 @@ class TraceRecorder:
         payload = self._load(trace.trace_path)
         payload.setdefault("events", []).append(event)
         trace.events.append(event)
+        self._write(trace, payload)
+
+    def set_steps(self, trace: RunTrace, steps: list[Step]) -> None:
+        payload = self._load(trace.trace_path)
+        payload["steps"] = [
+            {
+                "id": step.id,
+                "type": step.type,
+                "args": step.args,
+                "expected": step.expected,
+                "timeout_ms": step.timeout_ms,
+            }
+            for step in steps
+        ]
         self._write(trace, payload)
 
     def finish_run(self, trace: RunTrace, success: bool, reason: str) -> None:

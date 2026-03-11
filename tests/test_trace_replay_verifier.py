@@ -5,6 +5,7 @@ from pathlib import Path
 
 from open_browser_agent.replay import replay_trace
 from open_browser_agent.schemas.observation import Observation
+from open_browser_agent.schemas.step import Step
 from open_browser_agent.schemas.trace import TraceEvent, TraceVerification
 from open_browser_agent.trace import TraceRecorder
 from open_browser_agent.verifier import VerificationRule, Verifier
@@ -13,12 +14,14 @@ from open_browser_agent.verifier import VerificationRule, Verifier
 def test_trace_recorder_round_trip(tmp_path: Path) -> None:
     recorder = TraceRecorder(tmp_path)
     trace = recorder.start_run(goal="goal", task_id="task")
+    recorder.set_steps(trace, [Step(id="s1", type="click", args={"selector": "#go"})])
     recorder.append_event(trace, {"step_id": "s1", "action": "click"})
     recorder.finish_run(trace, success=True, reason="done")
 
     payload = recorder.load_trace(trace.trace_path)
 
     assert payload["goal"] == "goal"
+    assert payload["steps"][0]["id"] == "s1"
     assert payload["events"][0]["step_id"] == "s1"
     assert payload["verification"]["success"] is True
 
