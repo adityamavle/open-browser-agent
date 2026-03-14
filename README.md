@@ -4,12 +4,12 @@ A small browser-use agent with a clear `observe -> plan -> act -> verify` loop, 
 
 ## Status
 
-The repo now has a working deterministic core plus a browser-backed CLI path for bundled fixture tasks. Current implementation includes:
+The repo now has a working deterministic core plus a browser-backed CLI path for bundled public demo-site tasks. Current implementation includes:
 
 - task registry with structured steps
 - browser session wrapper over Playwright
 - action layer, observer, executor, verifier, trace recorder, and replay summary
-- deterministic local HTML fixture tasks for end-to-end smoke testing
+- deterministic public demo-site tasks for end-to-end smoke testing
 - unit coverage around the deterministic modules
 
 ## Install
@@ -46,9 +46,9 @@ oba replay traces_e2e\<trace-id>.json
 
 ## What Works
 
-- browser-backed execution for bundled fixture tasks
+- browser-backed execution for bundled public demo tasks
 - deterministic executor over structured steps
-- pre/post observations recorded in JSON traces
+- pre/post observations recorded in JSON traces, including compact form-state snapshots
 - rule-based verification on final page state
 - replay summaries from saved traces
 - fake-friendly browser abstractions for unit testing
@@ -57,5 +57,5 @@ oba replay traces_e2e\<trace-id>.json
 
 - strengthen replay into deterministic re-execution
 - add more explicit per-step expected outcomes
-- add stable public demo-site tasks alongside local fixtures
+- strengthen the real-page task set and verifiers
 - enforce the current coverage target in CI

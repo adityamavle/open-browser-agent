@@ -14,9 +14,6 @@ from open_browser_agent.trace import TraceRecorder
 from open_browser_agent.verifier import Verifier
 
 
-FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="oba",
@@ -72,7 +69,7 @@ def handle_run(goal: str, trace_dir: str) -> int:
 
     try:
         with BrowserSession() as session:
-            actions = ActionAPI(lambda: session.page, url_resolver=_resolve_url)
+            actions = ActionAPI(lambda: session.page)
             observer = Observer(lambda: session.page)
             executor = Executor(actions=actions, observer=observer, trace_recorder=recorder, trace=trace)
 
@@ -97,15 +94,6 @@ def handle_run(goal: str, trace_dir: str) -> int:
         recorder.finish_run(trace, success=False, reason=str(exc))
         print(f"Browser session error: {exc}. Trace written to {trace.trace_path}.")
         return 1
-
-
-def _resolve_url(url: str) -> str:
-    if not url.startswith("fixture://"):
-        return url
-
-    fixture_name = url.removeprefix("fixture://")
-    fixture_path = FIXTURE_DIR / fixture_name
-    return fixture_path.resolve().as_uri()
 
 
 def handle_replay(trace_path: str) -> int:

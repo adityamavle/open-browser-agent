@@ -29,6 +29,7 @@ class FakePage:
         self.title_value = "Start"
         self.body_text = "Visible page text"
         self.dom_summary = ["main:Home", "form:Search"]
+        self.form_values = {"#name": "<empty>"}
 
     def goto(self, url: str) -> None:
         self.url = url
@@ -38,6 +39,7 @@ class FakePage:
 
     def fill(self, selector: str, text: str) -> None:
         self.last_fill = (selector, text)
+        self.form_values[selector] = text
 
     def wait_for_selector(self, selector: str) -> None:
         self.last_wait = selector
@@ -55,6 +57,9 @@ class FakePage:
     def snapshot_dom_summary(self) -> list[str]:
         return self.dom_summary
 
+    def snapshot_form_state(self) -> list[str]:
+        return [f"input:text:name={self.form_values['#name']}"]
+
 
 def test_executor_runs_supported_steps_and_traces(tmp_path: Path) -> None:
     page = FakePage()
@@ -71,6 +76,7 @@ def test_executor_runs_supported_steps_and_traces(tmp_path: Path) -> None:
     assert payload["events"][0]["step_id"] == "s1"
     assert payload["events"][0]["pre_observation"]["title"] == "Start"
     assert payload["events"][0]["post_observation"]["url"] == "https://example.test/next"
+    assert payload["events"][0]["pre_observation"]["form_state"] == ["input:text:name=<empty>"]
 
 
 def test_executor_run_steps_returns_all_results() -> None:
@@ -106,3 +112,18 @@ def test_executor_dispatches_all_supported_step_types() -> None:
     assert executor.run_step(Step(id="s1", type="type", args={"selector": "#name", "text": "Ada"})).success
     assert executor.run_step(Step(id="s2", type="press", args={"keys": "Enter"})).success
     assert executor.run_step(Step(id="s3", type="wait_for", args={"selector": "form"})).success
+
+
+def test_executor_trace_records_form_state_changes(tmp_path: Path) -> None:
+    page = FakePage()
+    observer = Observer(lambda: page)
+    recorder = TraceRecorder(tmp_path)
+    trace = recorder.start_run(goal="goal", task_id="task")
+    executor = Executor(actions=ActionAPI(lambda: page), observer=observer, trace_recorder=recorder, trace=trace)
+
+    result = executor.run_step(Step(id="s1", type="type", args={"selector": "#name", "text": "Ada"}))
+
+    assert result.success is True
+    payload = recorder.load_trace(trace.trace_path)
+    assert payload["events"][0]["pre_observation"]["form_state"] == ["input:text:name=<empty>"]
+    assert payload["events"][0]["post_observation"]["form_state"] == ["input:text:name=Ada"]

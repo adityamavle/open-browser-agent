@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from open_browser_agent import cli
+from open_browser_agent.tasks.registry import FORM_FILL_URL, TABLE_SCRAPE_URL, WIKIPEDIA_SUMMARY_URL
 
 
 def test_build_parser_accepts_examples_list() -> None:
@@ -52,12 +53,12 @@ def test_handle_run_for_known_goal(tmp_path: Path, capsys) -> None:
             self.title_value = "Blank"
             self.body_text = ""
             self.summary_text = ""
-            self.table_text = "Language Creator Python Guido van Rossum Analytical Engine Notes Ada Lovelace"
+            self.table_text = "Last Name First Name Email Due Web Site Action Smith John jdoe@hotmail.com $50.00 http://www.jsmith.com edit delete"
             self.keyboard = type("Keyboard", (), {"press": lambda self, keys: None})()
 
         def goto(self, url: str) -> None:
             self.url = url
-            if url.endswith("wikipedia_summary.html"):
+            if "Ada_Lovelace" in url:
                 self.title_value = "Ada Lovelace - Summary"
                 self.body_text = (
                     "Ada Lovelace was an English mathematician and writer known for her work "
@@ -108,6 +109,7 @@ def test_handle_run_for_known_goal(tmp_path: Path, capsys) -> None:
     assert code == 0
     assert "Task 'wikipedia-summary' completed with success=True" in output
     assert trace["steps"][0]["id"] == "goto-wikipedia"
+    assert trace["steps"][0]["args"]["url"] == WIKIPEDIA_SUMMARY_URL
     assert trace["events"][0]["event"] == "task_resolved"
     assert trace["verification"]["success"] is True
 
@@ -129,3 +131,8 @@ def test_handle_replay(tmp_path: Path, capsys) -> None:
 def test_main_dispatches_examples_list(monkeypatch) -> None:
     monkeypatch.setattr("sys.argv", ["oba", "examples", "list"])
     assert cli.main() == 0
+
+
+def test_bundled_tasks_use_public_urls() -> None:
+    urls = {FORM_FILL_URL, TABLE_SCRAPE_URL, WIKIPEDIA_SUMMARY_URL}
+    assert all(url.startswith("https://") for url in urls)
