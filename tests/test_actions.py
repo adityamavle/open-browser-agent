@@ -86,6 +86,18 @@ def test_extract_uses_named_targets() -> None:
     assert table.details["value"] == "row1 row2"
 
 
+def test_extract_summary_uses_evaluate_on_real_pages() -> None:
+    class EvalPage(FakePage):
+        def evaluate(self, script: str) -> str:
+            assert "querySelectorAll('main p, article p, p')" in script
+            return "Summary from evaluate"
+
+    result = ActionAPI(lambda: EvalPage()).extract("summary")
+
+    assert result.ok is True
+    assert result.details["value"] == "Summary from evaluate"
+
+
 def test_action_error_is_reported() -> None:
     class BrokenPage(FakePage):
         def click(self, selector: str) -> None:
@@ -94,6 +106,7 @@ def test_action_error_is_reported() -> None:
     result = ActionAPI(lambda: BrokenPage()).click("#missing")
     assert result.ok is False
     assert result.error == "missing selector"
+    assert result.error_code == "selector_not_found"
 
 
 def test_action_failures_are_reported_for_other_methods() -> None:
@@ -124,6 +137,35 @@ def test_action_failures_are_reported_for_other_methods() -> None:
     assert actions.type("#name", "Ada").error == "fill failed"
     assert actions.wait_for("form").error == "wait failed"
     assert actions.press("Enter").error == "press failed"
+
+
+def test_action_timeout_is_forwarded_when_supported() -> None:
+    class TimeoutAwarePage(FakePage):
+        def __init__(self) -> None:
+            super().__init__()
+            self.timeout_seen: list[int] = []
+
+        def goto(self, url: str, timeout: int | None = None) -> None:
+            self.timeout_seen.append(timeout or 0)
+            super().goto(url)
+
+    page = TimeoutAwarePage()
+    result = ActionAPI(lambda: page).goto("https://example.test/form", timeout_ms=4321)
+
+    assert result.ok is True
+    assert page.timeout_seen == [4321]
+    assert result.details["timeout_ms"] == 4321
+
+
+def test_action_timeout_error_code_is_classified() -> None:
+    class TimeoutPage(FakePage):
+        def wait_for_selector(self, selector: str) -> None:
+            raise RuntimeError("Timeout 30000ms exceeded.")
+
+    result = ActionAPI(lambda: TimeoutPage()).wait_for("#missing")
+
+    assert result.ok is False
+    assert result.error_code == "timeout"
 
 
 def test_extract_error_is_reported() -> None:

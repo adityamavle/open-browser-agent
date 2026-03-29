@@ -22,22 +22,52 @@ class Observer:
 
     def capture(self, screenshot_path: str | None = None) -> Observation:
         page = self._page_provider()
-        visible_text = page.locator("body").inner_text().strip()
+        self._stabilize_page(page)
+        visible_text = self._safe_call(page, lambda: page.locator("body").inner_text().strip(), default="")
         visible_text = visible_text[: self.max_text_chars]
-        dom_summary = self._capture_dom_summary(page)
-        form_state = self._capture_form_state(page)
+        dom_summary = self._safe_call(page, lambda: self._capture_dom_summary(page), default=[])
+        form_state = self._safe_call(page, lambda: self._capture_form_state(page), default=[])
 
         if screenshot_path:
-            page.screenshot(path=screenshot_path)
+            self._safe_call(page, lambda: page.screenshot(path=screenshot_path), default=None)
 
         return Observation(
-            url=page.url,
-            title=page.title(),
+            url=self._safe_call(page, lambda: page.url, default=""),
+            title=self._safe_call(page, lambda: page.title(), default=""),
             visible_text=visible_text,
             dom_summary=dom_summary[: self.max_dom_nodes],
             form_state=form_state[: self.max_form_controls],
             screenshot_path=screenshot_path,
         )
+
+    def _stabilize_page(self, page: Any) -> None:
+        if not hasattr(page, "wait_for_load_state"):
+            return
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=500)
+        except Exception:
+            return
+        if hasattr(page, "wait_for_timeout"):
+            try:
+                page.wait_for_timeout(50)
+            except Exception:
+                return
+
+    def _safe_call(self, page: Any, fn: Callable[[], Any], default: Any) -> Any:
+        try:
+            return fn()
+        except Exception as exc:
+            if self._is_navigation_race(exc) and hasattr(page, "wait_for_timeout"):
+                try:
+                    page.wait_for_timeout(150)
+                    return fn()
+                except Exception:
+                    return default
+            return default
+
+    def _is_navigation_race(self, exc: Exception) -> bool:
+        lowered = str(exc).lower()
+        return "execution context was destroyed" in lowered or "most likely because of a navigation" in lowered
 
     def _capture_dom_summary(self, page: Any) -> list[str]:
         if hasattr(page, "snapshot_dom_summary"):

@@ -117,3 +117,59 @@ def test_observer_capture_handles_pages_without_form_hooks() -> None:
 
     assert observation.dom_summary == []
     assert observation.form_state == []
+
+
+def test_observer_capture_handles_navigation_race() -> None:
+    class RacePage(FakePage):
+        def __init__(self) -> None:
+            super().__init__()
+            self.title_calls = 0
+            self.waits: list[int] = []
+
+        def title(self) -> str:
+            self.title_calls += 1
+            if self.title_calls == 1:
+                raise RuntimeError("Execution context was destroyed, most likely because of a navigation")
+            return "Recovered title"
+
+        def wait_for_timeout(self, timeout_ms: int) -> None:
+            self.waits.append(timeout_ms)
+
+    page = RacePage()
+    observation = Observer(lambda: page).capture()
+
+    assert observation.title == "Recovered title"
+    assert page.waits == [150]
+
+
+def test_observer_capture_stabilizes_page_before_reading() -> None:
+    class StabilizingPage(FakePage):
+        url = "https://example.test/new"
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.loaded = False
+            self.load_calls: list[tuple[str, int]] = []
+            self.waits: list[int] = []
+
+        def wait_for_load_state(self, state: str, timeout: int) -> None:
+            self.load_calls.append((state, timeout))
+            self.loaded = True
+
+        def wait_for_timeout(self, timeout_ms: int) -> None:
+            self.waits.append(timeout_ms)
+
+        def locator(self, selector: str) -> FakeLocator:
+            assert selector == "body"
+            return FakeLocator("New body" if self.loaded else "Old body")
+
+        def title(self) -> str:
+            return "New title" if self.loaded else "Old title"
+
+    page = StabilizingPage()
+    observation = Observer(lambda: page).capture()
+
+    assert observation.visible_text == "New body"
+    assert observation.title == "New title"
+    assert page.load_calls == [("domcontentloaded", 500)]
+    assert page.waits == [50]

@@ -7,3 +7,4 @@ __pycache__/
 build/
 *.egg-info/
 traces_e2e/
+.env

@@ -20,6 +20,7 @@ class TraceVerification:
     success: bool
     reason: str
     completed_at: str
+    checks: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -48,6 +48,7 @@ class Executor:
                     "status": "ok" if action_result.ok else "error",
                     "details": action_result.details,
                     "error": action_result.error,
+                    "error_code": action_result.error_code,
                     "pre_observation": pre_observation.to_dict() if pre_observation else None,
                     "post_observation": post_observation.to_dict() if post_observation else None,
                 },
@@ -57,19 +58,26 @@ class Executor:
         return ExecutionResult(success=action_result.ok, message=message, action_result=action_result)
 
     def run_steps(self, steps: list[Step]) -> list[ExecutionResult]:
-        return [self.run_step(step) for step in steps]
+        results: list[ExecutionResult] = []
+        for step in steps:
+            result = self.run_step(step)
+            results.append(result)
+            if not result.success:
+                break
+        return results
 
     def _dispatch(self, step: Step) -> ActionResult:
+        timeout_ms = step.timeout_ms
         if step.type in {"navigate", "goto"}:
-            return self.actions.goto(step.args["url"])
+            return self.actions.goto(step.args["url"], timeout_ms=timeout_ms)
         if step.type == "click":
-            return self.actions.click(step.args["selector"])
+            return self.actions.click(step.args["selector"], timeout_ms=timeout_ms)
         if step.type == "type":
-            return self.actions.type(step.args["selector"], step.args["text"])
+            return self.actions.type(step.args["selector"], step.args["text"], timeout_ms=timeout_ms)
         if step.type == "press":
-            return self.actions.press(step.args["keys"])
+            return self.actions.press(step.args["keys"], timeout_ms=timeout_ms)
         if step.type == "wait_for":
-            return self.actions.wait_for(step.args["selector"])
+            return self.actions.wait_for(step.args["selector"], timeout_ms=timeout_ms)
         if step.type == "extract":
-            return self.actions.extract(step.args["target"])
+            return self.actions.extract(step.args["target"], timeout_ms=timeout_ms)
         raise ExecutorError(f"Unsupported step type: {step.type}")

@@ -58,6 +58,12 @@ class TraceRecorder:
         trace.events.append(event)
         self._write(trace, payload)
 
+    def set_task(self, trace: RunTrace, task_id: str | None) -> None:
+        payload = self._load(trace.trace_path)
+        payload["task"] = task_id
+        trace.task_id = task_id
+        self._write(trace, payload)
+
     def set_steps(self, trace: RunTrace, steps: list[Step]) -> None:
         payload = self._load(trace.trace_path)
         payload["steps"] = [
@@ -72,12 +78,24 @@ class TraceRecorder:
         ]
         self._write(trace, payload)
 
-    def finish_run(self, trace: RunTrace, success: bool, reason: str) -> None:
+    def set_artifact(self, trace: RunTrace, key: str, value: Any) -> None:
+        payload = self._load(trace.trace_path)
+        payload.setdefault("artifacts", {})[key] = value
+        self._write(trace, payload)
+
+    def finish_run(
+        self,
+        trace: RunTrace,
+        success: bool,
+        reason: str,
+        checks: list[dict[str, Any]] | None = None,
+    ) -> None:
         payload = self._load(trace.trace_path)
         payload["verification"] = {
             "success": success,
             "reason": reason,
             "completed_at": datetime.now(UTC).isoformat(),
+            "checks": checks or [],
         }
         self._write(trace, payload)
 

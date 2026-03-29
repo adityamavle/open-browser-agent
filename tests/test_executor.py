@@ -94,6 +94,30 @@ def test_executor_run_steps_returns_all_results() -> None:
     assert results[1].action_result.details["value"] == "item text"
 
 
+def test_executor_run_steps_stops_after_first_failure() -> None:
+    class BrokenPage(FakePage):
+        def click(self, selector: str) -> None:
+            raise RuntimeError("click failed")
+
+        def locator(self, selector: str) -> FakeLocator:
+            if selector == "#should-not-run":
+                raise AssertionError("extract step should not run after failure")
+            return super().locator(selector)
+
+    page = BrokenPage()
+    executor = Executor(actions=ActionAPI(lambda: page))
+
+    results = executor.run_steps(
+        [
+            Step(id="s1", type="click", args={"selector": "#submit"}),
+            Step(id="s2", type="extract", args={"target": "#should-not-run"}),
+        ]
+    )
+
+    assert len(results) == 1
+    assert results[0].success is False
+
+
 def test_executor_raises_on_unsupported_step() -> None:
     executor = Executor(actions=ActionAPI(lambda: FakePage()))
 
@@ -127,3 +151,63 @@ def test_executor_trace_records_form_state_changes(tmp_path: Path) -> None:
     payload = recorder.load_trace(trace.trace_path)
     assert payload["events"][0]["pre_observation"]["form_state"] == ["input:text:name=<empty>"]
     assert payload["events"][0]["post_observation"]["form_state"] == ["input:text:name=Ada"]
+
+
+def test_executor_dispatches_step_timeout_to_actions() -> None:
+    class SpyActions:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, int | None]] = []
+
+        def goto(self, url: str, timeout_ms: int | None = None):
+            _ = url
+            self.calls.append(("goto", timeout_ms))
+            return ActionAPI(lambda: FakePage()).goto("https://example.test")
+
+        def click(self, selector: str, timeout_ms: int | None = None):
+            _ = selector
+            self.calls.append(("click", timeout_ms))
+            return ActionAPI(lambda: FakePage()).click("#submit")
+
+        def type(self, selector: str, text: str, timeout_ms: int | None = None):
+            _ = selector, text
+            self.calls.append(("type", timeout_ms))
+            return ActionAPI(lambda: FakePage()).type("#name", "Ada")
+
+        def press(self, keys: str, timeout_ms: int | None = None):
+            _ = keys
+            self.calls.append(("press", timeout_ms))
+            return ActionAPI(lambda: FakePage()).press("Enter")
+
+        def wait_for(self, selector: str, timeout_ms: int | None = None):
+            _ = selector
+            self.calls.append(("wait_for", timeout_ms))
+            return ActionAPI(lambda: FakePage()).wait_for("form")
+
+        def extract(self, target: str, timeout_ms: int | None = None):
+            _ = target
+            self.calls.append(("extract", timeout_ms))
+            return ActionAPI(lambda: FakePage()).extract("#item")
+
+    actions = SpyActions()
+    executor = Executor(actions=actions)  # type: ignore[arg-type]
+
+    steps = [
+        Step(id="s1", type="navigate", args={"url": "https://example.test"}, timeout_ms=111),
+        Step(id="s2", type="click", args={"selector": "#submit"}, timeout_ms=222),
+        Step(id="s3", type="type", args={"selector": "#name", "text": "Ada"}, timeout_ms=333),
+        Step(id="s4", type="press", args={"keys": "Enter"}, timeout_ms=444),
+        Step(id="s5", type="wait_for", args={"selector": "form"}, timeout_ms=555),
+        Step(id="s6", type="extract", args={"target": "#item"}, timeout_ms=666),
+    ]
+
+    results = executor.run_steps(steps)
+
+    assert all(result.success for result in results)
+    assert actions.calls == [
+        ("goto", 111),
+        ("click", 222),
+        ("type", 333),
+        ("press", 444),
+        ("wait_for", 555),
+        ("extract", 666),
+    ]

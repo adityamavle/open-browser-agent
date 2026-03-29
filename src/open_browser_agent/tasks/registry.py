@@ -19,6 +19,7 @@ class TaskSpec:
 FORM_FILL_URL = "https://testpages.eviltester.com/pages/forms/html-form/"
 TABLE_SCRAPE_URL = "https://the-internet.herokuapp.com/tables"
 WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/wiki/Ada_Lovelace"
+WIKIPEDIA_MAIN_URL = "https://en.wikipedia.org/wiki/Main_Page"
 
 
 TASKS: list[TaskSpec] = [
@@ -64,6 +65,30 @@ TASKS: list[TaskSpec] = [
         verification_rules=[
             VerificationRule(kind="url_contains", value="/tables", label="tables page"),
             VerificationRule(kind="text_contains", value="Smith", label="expected row text"),
+        ],
+    ),
+    TaskSpec(
+        task_id="wikipedia-search-press",
+        summary="Search Wikipedia by typing a query and pressing Enter.",
+        aliases=("wiki press", "wikipedia press", "search with enter"),
+        steps=[
+            Step(id="goto-wikipedia-main", type="navigate", args={"url": WIKIPEDIA_MAIN_URL}),
+            Step(id="wait-wikipedia-search", type="wait_for", args={"selector": "input[name='search']"}),
+            Step(
+                id="type-search-query",
+                type="type",
+                args={"selector": "input[name='search']", "text": "Ada Lovelace"},
+            ),
+            Step(id="press-enter-search", type="press", args={"keys": "Enter"}),
+        ],
+        verifier_hint="Keyboard Enter triggers navigation to the target article.",
+        verification_rules=[
+            VerificationRule(kind="url_contains", value="Ada_Lovelace", label="article URL"),
+            VerificationRule(
+                kind="text_contains",
+                value="English mathematician and writer",
+                label="summary text",
+            ),
         ],
     ),
     TaskSpec(
