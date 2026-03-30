@@ -97,6 +97,16 @@ class Verifier:
             passed = isinstance(resolved, str) and expected in resolved
             evidence = expected if passed else str(resolved)[:200]
             return passed, f"Verification failed for {label}.", evidence
+        if rule.kind == "artifact_text_min_length":
+            if not isinstance(rule.value, dict):
+                raise ValueError("artifact_text_min_length requires {'path': ..., 'min_chars': ...}.")
+            path = str(rule.value.get("path", ""))
+            minimum = int(rule.value.get("min_chars", 0))
+            resolved = self._resolve_artifact(verification_input.artifacts, path)
+            length = len(resolved.strip()) if isinstance(resolved, str) else 0
+            passed = isinstance(resolved, str) and length >= minimum
+            evidence = f"len={length}"
+            return passed, f"Verification failed for {label}.", evidence
         if rule.kind == "artifact_list_min_length":
             if not isinstance(rule.value, dict):
                 raise ValueError("artifact_list_min_length requires {'path': ..., 'min': ...}.")

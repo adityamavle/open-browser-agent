@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
@@ -9,13 +11,20 @@ from typing import Any
 
 from open_browser_agent.actions import ActionAPI
 from open_browser_agent.browser import BrowserSession, BrowserSessionError
+from open_browser_agent.comparison import (
+    AnthropicComparisonRowSynthesizer,
+    ComparisonSynthesisError,
+    parse_comparison_intent,
+)
 from open_browser_agent.executor import Executor
 from open_browser_agent.observer import Observer
 from open_browser_agent.planner import Planner, PlannerError, build_planner
 from open_browser_agent.replay import replay_trace
+from open_browser_agent.strategies import get_fallback_plan
+from open_browser_agent.strategies.wikipedia import collect_extract_artifacts, collect_extract_sequence
 from open_browser_agent.tasks.registry import TASKS
 from open_browser_agent.trace import TraceRecorder
-from open_browser_agent.verifier import VerificationInput, Verifier
+from open_browser_agent.verifier import VerificationInput, VerificationRule, Verifier
 
 
 @dataclass(slots=True)
@@ -32,6 +41,9 @@ class RunOutcome:
     planner_model: str | None = None
     steps: list[dict[str, object]] = field(default_factory=list)
     artifacts: dict[str, object] = field(default_factory=dict)
+    fallback_used: bool = False
+    fallback_strategy: str | None = None
+    fallback_trigger: str | None = None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -200,10 +212,38 @@ def run_goal(goal: str, trace_dir: str, planner_name: str = "task-registry") -> 
             executor = Executor(actions=actions, observer=observer, trace_recorder=recorder, trace=trace)
 
             results = executor.run_steps(plan_result.steps)
+            all_results = list(results)
             first_failure = next((result for result in results if not result.success), None)
-            extract_artifacts = _collect_extract_artifacts(results)
+            extract_artifacts = collect_extract_artifacts(results)
+            extract_sequence = collect_extract_sequence(results)
             if extract_artifacts:
                 recorder.set_artifact(trace, "extracts", extract_artifacts)
+            if extract_sequence:
+                recorder.set_artifact(trace, "extract_sequence", extract_sequence)
+            fallback_used = False
+            fallback_strategy: str | None = None
+            fallback_trigger: str | None = None
+            if first_failure is not None:
+                fallback_attempt = _attempt_fallback(
+                    plan_result=plan_result,
+                    recorder=recorder,
+                    trace=trace,
+                    executor=executor,
+                    trigger=first_failure.message,
+                )
+                if fallback_attempt is not None:
+                    fallback_used = True
+                    fallback_strategy = fallback_attempt["strategy"]
+                    fallback_trigger = first_failure.message
+                    results = fallback_attempt["results"]
+                    all_results.extend(results)
+                    extract_artifacts = fallback_attempt["extract_artifacts"]
+                    extract_sequence = fallback_attempt["extract_sequence"]
+                    if extract_artifacts:
+                        recorder.set_artifact(trace, "extracts", extract_artifacts)
+                    if extract_sequence:
+                        recorder.set_artifact(trace, "extract_sequence", extract_sequence)
+                    first_failure = next((result for result in results if not result.success), None)
             if first_failure is not None:
                 reason = first_failure.message
                 recorder.finish_run(trace, success=False, reason=reason, checks=[])
@@ -215,19 +255,103 @@ def run_goal(goal: str, trace_dir: str, planner_name: str = "task-registry") -> 
                     duration_ms=int((perf_counter() - started) * 1000),
                     failure_kind="execution",
                     verification_checks=[],
-                    action_stats=_build_action_stats(results),
+                    action_stats=_build_action_stats(all_results),
                     planner_provider=plan_result.provider_name,
                     planner_model=_planner_model(plan_result.metadata),
                     steps=_steps_to_dict(plan_result.steps),
-                    artifacts={"extracts": extract_artifacts} if extract_artifacts else {},
+                    artifacts=_build_run_artifacts(
+                        task_id=plan_result.task_id,
+                        goal=goal,
+                        observation=observer.capture(),
+                        extract_artifacts=extract_artifacts,
+                        extract_sequence=extract_sequence,
+                        plan_metadata=plan_result.metadata,
+                        run_id=trace.run_id,
+                    ),
+                    fallback_used=fallback_used,
+                    fallback_strategy=fallback_strategy,
+                    fallback_trigger=fallback_trigger,
                 )
 
-            verification = Verifier(plan_result.verification_rules).verify(
+            current_observation = observer.capture()
+            artifacts = _build_run_artifacts(
+                task_id=plan_result.task_id,
+                goal=goal,
+                observation=current_observation,
+                extract_artifacts=extract_artifacts,
+                extract_sequence=extract_sequence,
+                plan_metadata=plan_result.metadata,
+                run_id=trace.run_id,
+            )
+            verification_rules = _effective_verification_rules(
+                task_id=plan_result.task_id,
+                plan_rules=plan_result.verification_rules,
+                plan_metadata=plan_result.metadata,
+                artifacts=artifacts,
+            )
+            verification = Verifier(verification_rules).verify(
                 VerificationInput(
-                    observation=observer.capture(),
-                    artifacts={"extracts": extract_artifacts},
+                    observation=current_observation,
+                    artifacts=artifacts,
                 )
             )
+            if not verification.success and not fallback_used:
+                fallback_attempt = _attempt_fallback(
+                    plan_result=plan_result,
+                    recorder=recorder,
+                    trace=trace,
+                    executor=executor,
+                    trigger=verification.reason,
+                )
+                if fallback_attempt is not None:
+                    fallback_used = True
+                    fallback_strategy = fallback_attempt["strategy"]
+                    fallback_trigger = verification.reason
+                    results = fallback_attempt["results"]
+                    all_results.extend(results)
+                    extract_artifacts = fallback_attempt["extract_artifacts"]
+                    extract_sequence = fallback_attempt["extract_sequence"]
+                    if extract_artifacts:
+                        recorder.set_artifact(trace, "extracts", extract_artifacts)
+                    if extract_sequence:
+                        recorder.set_artifact(trace, "extract_sequence", extract_sequence)
+                    fallback_observation = observer.capture()
+                    artifacts = _build_run_artifacts(
+                        task_id=plan_result.task_id,
+                        goal=goal,
+                        observation=fallback_observation,
+                        extract_artifacts=extract_artifacts,
+                        extract_sequence=extract_sequence,
+                        plan_metadata=plan_result.metadata,
+                        run_id=trace.run_id,
+                    )
+                    verification_rules = _effective_verification_rules(
+                        task_id=plan_result.task_id,
+                        plan_rules=plan_result.verification_rules,
+                        plan_metadata=plan_result.metadata,
+                        artifacts=artifacts,
+                    )
+                    fallback_verification = Verifier(verification_rules).verify(
+                        VerificationInput(
+                            observation=fallback_observation,
+                            artifacts=artifacts,
+                        )
+                    )
+                    if fallback_verification.success or next((result for result in results if not result.success), None) is None:
+                        verification = fallback_verification
+            final_observation = observer.capture()
+            artifacts = _build_run_artifacts(
+                task_id=plan_result.task_id,
+                goal=goal,
+                observation=final_observation,
+                extract_artifacts=extract_artifacts,
+                extract_sequence=extract_sequence,
+                plan_metadata=plan_result.metadata,
+                run_id=trace.run_id,
+            )
+            if artifacts:
+                for artifact_key, artifact_value in artifacts.items():
+                    recorder.set_artifact(trace, artifact_key, artifact_value)
             recorder.finish_run(
                 trace,
                 success=verification.success,
@@ -242,11 +366,14 @@ def run_goal(goal: str, trace_dir: str, planner_name: str = "task-registry") -> 
                 duration_ms=int((perf_counter() - started) * 1000),
                 failure_kind=None if verification.success else "verification",
                 verification_checks=verification.checks,
-                action_stats=_build_action_stats(results),
+                action_stats=_build_action_stats(all_results),
                 planner_provider=plan_result.provider_name,
                 planner_model=_planner_model(plan_result.metadata),
                 steps=_steps_to_dict(plan_result.steps),
-                artifacts={"extracts": extract_artifacts} if extract_artifacts else {},
+                artifacts=artifacts,
+                fallback_used=fallback_used,
+                fallback_strategy=fallback_strategy,
+                fallback_trigger=fallback_trigger,
             )
     except BrowserSessionError as exc:
         reason = str(exc)
@@ -371,16 +498,340 @@ def _artifact_lines(artifacts: dict[str, object], mode: str = "summary") -> list
         return []
     lines: list[str] = []
     extracts = artifacts.get("extracts") if isinstance(artifacts, dict) else None
-    if not isinstance(extracts, dict):
-        return lines
-    for key, value in extracts.items():
-        if isinstance(value, str):
-            compact = " ".join(value.split()) if mode == "summary" else value
-            preview = compact[:240] + ("..." if mode == "summary" and len(compact) > 240 else "")
-            lines.append(f"- {key}: {preview}")
+    if isinstance(extracts, dict):
+        for key, value in extracts.items():
+            if isinstance(value, str):
+                compact = " ".join(value.split()) if mode == "summary" else value
+                preview = compact[:240] + ("..." if mode == "summary" and len(compact) > 240 else "")
+                lines.append(f"- {key}: {preview}")
+            else:
+                lines.append(f"- {key}: {json.dumps(value)}")
+    extract_sequence = artifacts.get("extract_sequence") if isinstance(artifacts, dict) else None
+    if isinstance(extract_sequence, list) and extract_sequence:
+        sequence_count = len(extract_sequence)
+        if mode == "summary":
+            lines.append(f"- extract_sequence: {sequence_count} extract events")
         else:
-            lines.append(f"- {key}: {json.dumps(value)}")
+            lines.append(f"- extract_sequence: {json.dumps(extract_sequence, ensure_ascii=False)}")
     return lines
+
+
+def _build_run_artifacts(
+    task_id: str | None,
+    goal: str,
+    observation,
+    extract_artifacts: dict[str, Any],
+    extract_sequence: list[dict[str, Any]] | None = None,
+    plan_metadata: dict[str, Any] | None = None,
+    run_id: str | None = None,
+) -> dict[str, object]:
+    artifacts: dict[str, object] = {}
+    extract_sequence = extract_sequence or []
+    plan_metadata = plan_metadata or {}
+    artifacts["isLLMReProcessingRequired"] = _is_llm_reprocessing_required(
+        task_id=task_id,
+        goal=goal,
+        plan_metadata=plan_metadata,
+    )
+    if extract_artifacts:
+        artifacts["extracts"] = extract_artifacts
+    if extract_sequence:
+        artifacts["extract_sequence"] = extract_sequence
+
+    research_brief = _build_research_brief(task_id=task_id, goal=goal, observation=observation, extract_artifacts=extract_artifacts)
+    if research_brief is not None:
+        artifacts["research_brief"] = research_brief
+    comparison_artifact = _build_comparison_artifact(
+        task_id=task_id,
+        goal=goal,
+        observation=observation,
+        extract_sequence=extract_sequence,
+        plan_metadata=plan_metadata,
+    )
+    if comparison_artifact is not None:
+        comparison_artifact["isLLMReProcessingRequired"] = bool(artifacts["isLLMReProcessingRequired"])
+        csv_path = _maybe_write_comparison_csv(comparison_artifact, run_id=run_id)
+        if csv_path is not None:
+            comparison_artifact["csv_path"] = str(csv_path)
+        artifacts["comparison"] = comparison_artifact
+    return artifacts
+
+
+def _build_research_brief(task_id: str | None, goal: str, observation, extract_artifacts: dict[str, Any]) -> dict[str, object] | None:
+    if task_id not in {"wikipedia-summary", "wikipedia-section", "wikipedia-section-headings"}:
+        return None
+    summary = extract_artifacts.get("summary")
+    citation_links = extract_artifacts.get("citation_links")
+    section_headings = extract_artifacts.get("section_headings")
+    section_extracts = {
+        key.removeprefix("section:"): value
+        for key, value in extract_artifacts.items()
+        if key.startswith("section:")
+    }
+    topic = observation.title.replace(" - Wikipedia", "").strip() if getattr(observation, "title", "") else goal
+    brief: dict[str, object] = {
+        "topic": topic,
+        "article_url": getattr(observation, "url", ""),
+        "article_title": getattr(observation, "title", ""),
+    }
+    if isinstance(summary, str) and summary.strip():
+        brief["summary"] = summary
+    if isinstance(citation_links, list) and citation_links:
+        brief["citation_links"] = citation_links
+    if isinstance(section_headings, list) and section_headings:
+        brief["section_headings"] = section_headings
+    if section_extracts:
+        brief["sections"] = section_extracts
+    return brief
+
+
+def _is_llm_reprocessing_required(
+    task_id: str | None,
+    goal: str,
+    plan_metadata: dict[str, Any],
+) -> bool:
+    if task_id == "wikipedia-comparison":
+        return True
+    if parse_comparison_intent(goal) is not None:
+        return True
+    metadata_flag = plan_metadata.get("isLLMReProcessingRequired")
+    if isinstance(metadata_flag, bool):
+        return metadata_flag
+    return False
+
+
+def _maybe_synthesize_comparison_rows(
+    subject: str,
+    columns: list[str],
+    raw_rows: list[dict[str, object]],
+    plan_metadata: dict[str, Any],
+) -> dict[str, object] | None:
+    if not raw_rows:
+        return None
+    if plan_metadata.get("mode") != "llm":
+        return None
+    try:
+        synthesizer = AnthropicComparisonRowSynthesizer.from_env()
+    except ComparisonSynthesisError:
+        return None
+    try:
+        result = synthesizer.synthesize(subject=subject, columns=columns, raw_rows=raw_rows)
+    except Exception:
+        return None
+    return {
+        "rows": result.rows,
+        "provider": result.provider,
+        "model": result.model,
+    }
+
+
+def _build_comparison_artifact(
+    task_id: str | None,
+    goal: str,
+    observation,
+    extract_sequence: list[dict[str, Any]],
+    plan_metadata: dict[str, Any],
+) -> dict[str, object] | None:
+    comparison_intent = parse_comparison_intent(goal)
+    if comparison_intent is None:
+        return None
+
+    raw_rows = _build_comparison_rows(extract_sequence, requested_columns=comparison_intent.requested_columns)
+    if not raw_rows:
+        return None
+
+    columns = comparison_intent.requested_columns or _infer_comparison_columns_from_rows(raw_rows)
+    if len(columns) > 5:
+        columns = columns[:5]
+
+    synthesized_rows = raw_rows
+    synthesis_metadata = {
+        "llm_reprocessing_applied": False,
+        "llm_reprocessing_provider": None,
+        "llm_reprocessing_model": None,
+        "llm_reprocessing_error": None,
+    }
+    synthesis_result = _maybe_synthesize_comparison_rows(
+        subject=comparison_intent.subject,
+        columns=columns,
+        raw_rows=raw_rows,
+        plan_metadata=plan_metadata,
+    )
+    if synthesis_result is not None:
+        synthesized_rows = synthesis_result["rows"]
+        synthesis_metadata = {
+            "llm_reprocessing_applied": True,
+            "llm_reprocessing_provider": synthesis_result["provider"],
+            "llm_reprocessing_model": synthesis_result["model"],
+            "llm_reprocessing_error": None,
+        }
+    elif _is_llm_reprocessing_required(task_id=task_id, goal=goal, plan_metadata=plan_metadata):
+        synthesis_metadata["llm_reprocessing_error"] = "llm_reprocessing_unavailable"
+
+    return {
+        "query": goal,
+        "subject": comparison_intent.subject,
+        "output_mode": comparison_intent.output_mode,
+        "isLLMReProcessingRequired": True,
+        "task_id": task_id,
+        "article_url": getattr(observation, "url", ""),
+        "columns": columns,
+        "raw_rows": raw_rows,
+        "rows": synthesized_rows,
+        "entity_count": len(synthesized_rows),
+        "metadata": {
+            "planner_mode": plan_metadata.get("mode"),
+            "model": plan_metadata.get("model"),
+            **synthesis_metadata,
+        },
+    }
+
+
+def _effective_verification_rules(
+    task_id: str | None,
+    plan_rules: list,
+    plan_metadata: dict[str, Any],
+    artifacts: dict[str, object],
+) -> list:
+    if task_id != "wikipedia-comparison":
+        return list(plan_rules)
+
+    comparison = artifacts.get("comparison")
+    if not isinstance(comparison, dict):
+        return list(plan_rules)
+
+    expected_rows = 0
+    entities = plan_metadata.get("entities")
+    if isinstance(entities, list):
+        expected_rows = len(entities)
+    minimum_rows = max(2, expected_rows or 0)
+
+    rules = [
+        VerificationRule(kind="artifact_exists", value="comparison", label="comparison artifact"),
+        VerificationRule(
+            kind="artifact_list_min_length",
+            value={"path": "comparison.rows", "min": minimum_rows},
+            label="comparison rows",
+        ),
+    ]
+    if str(comparison.get("output_mode") or "").lower() == "csv":
+        rules.append(VerificationRule(kind="artifact_exists", value="comparison.csv_path", label="comparison csv"))
+    return rules
+
+
+def _maybe_write_comparison_csv(comparison: dict[str, object], run_id: str | None = None) -> Path | None:
+    if str(comparison.get("output_mode") or "").lower() != "csv":
+        return None
+    rows = comparison.get("rows")
+    if not isinstance(rows, list) or not rows:
+        return None
+    columns = comparison.get("columns")
+    if not isinstance(columns, list) or not columns:
+        return None
+
+    output_dir = Path("artifacts") / "comparisons"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    slug = _slugify_comparison_subject(str(comparison.get("subject") or "comparison"))
+    suffix = run_id or "manual"
+    path = output_dir / f"{slug}_{suffix}.csv"
+
+    fieldnames = ["entity_name", *[str(column) for column in columns], "article_url"]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            writer.writerow({name: row.get(name, "") for name in fieldnames})
+    return path.resolve()
+
+
+def _build_comparison_rows(
+    extract_sequence: list[dict[str, Any]],
+    requested_columns: list[str],
+) -> list[dict[str, object]]:
+    page_rows: dict[str, dict[str, object]] = {}
+    page_order: list[str] = []
+    for item in extract_sequence:
+        url = str(item.get("current_url") or "").strip()
+        if not url:
+            continue
+        if url not in page_rows:
+            page_order.append(url)
+            page_rows[url] = {
+                "entity_name": _entity_name_from_page_title(str(item.get("page_title") or ""), url),
+                "article_url": url,
+            }
+        row = page_rows[url]
+        target = str(item.get("target") or "").strip()
+        value = item.get("value")
+        if target == "summary" and isinstance(value, str) and value.strip():
+            row["summary"] = value
+        elif target == "citation_links" and isinstance(value, list) and value:
+            row["citation_links"] = value
+        elif target.startswith("section:") and isinstance(value, str) and value.strip():
+            row[target.removeprefix("section:")] = value
+        elif target == "section_headings" and isinstance(value, list) and value:
+            row["section_headings"] = value
+
+    normalized_requested = {_normalize_column_name(column): column for column in requested_columns}
+    rows: list[dict[str, object]] = []
+    for url in page_order:
+        raw_row = page_rows[url]
+        row: dict[str, object] = {
+            "entity_name": raw_row["entity_name"],
+            "article_url": raw_row["article_url"],
+        }
+        if requested_columns:
+            for normalized, original in normalized_requested.items():
+                matched = _match_requested_column(raw_row, normalized)
+                if matched is not None:
+                    row[original] = matched
+        else:
+            for key in ("summary",):
+                if key in raw_row:
+                    row[key] = raw_row[key]
+        rows.append(row)
+    return rows
+
+
+def _entity_name_from_page_title(page_title: str, url: str) -> str:
+    cleaned = page_title.replace(" - Wikipedia", "").strip()
+    if cleaned:
+        return cleaned
+    return url.rstrip("/").rsplit("/", 1)[-1].replace("_", " ")
+
+
+def _normalize_column_name(value: str) -> str:
+    return " ".join(value.strip().lower().split())
+
+
+def _match_requested_column(raw_row: dict[str, object], normalized_column: str) -> object | None:
+    for key, value in raw_row.items():
+        normalized_key = _normalize_column_name(str(key))
+        if normalized_key == normalized_column:
+            return value
+        if normalized_key.startswith(normalized_column) or normalized_column.startswith(normalized_key):
+            return value
+    return None
+
+
+def _infer_comparison_columns_from_rows(rows: list[dict[str, object]]) -> list[str]:
+    inferred: list[str] = []
+    for row in rows:
+        for key in row.keys():
+            if key in {"entity_name", "article_url"}:
+                continue
+            if key not in inferred:
+                inferred.append(key)
+            if len(inferred) >= 5:
+                return inferred
+    return inferred
+
+
+def _slugify_comparison_subject(subject: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", subject.lower()).strip("_")
+    return normalized or "comparison"
 
 
 def _print_run_report(goal: str, outcome: RunOutcome, artifacts_mode: str = "summary") -> None:
@@ -394,18 +845,90 @@ def _print_run_report(goal: str, outcome: RunOutcome, artifacts_mode: str = "sum
     print(f"- status: {'success' if outcome.success else 'failure'}")
     print(f"- reason: {outcome.reason}")
     print(f"- duration_ms: {outcome.duration_ms}")
+    if outcome.fallback_used:
+        print(f"- fallback: {outcome.fallback_strategy or 'unknown'}")
+        if outcome.fallback_trigger:
+            print(f"- fallback_trigger: {outcome.fallback_trigger}")
     print("- plan:")
     if outcome.steps:
         for index, step in enumerate(outcome.steps, start=1):
             print(f"  {index}. {_format_step_summary(step)}")
     else:
         print("  none")
+    research_brief = outcome.artifacts.get("research_brief") if isinstance(outcome.artifacts, dict) else None
+    if isinstance(research_brief, dict):
+        _print_research_brief(research_brief, mode=artifacts_mode)
+    comparison_artifact = outcome.artifacts.get("comparison") if isinstance(outcome.artifacts, dict) else None
+    if isinstance(comparison_artifact, dict):
+        _print_comparison_artifact(comparison_artifact, mode=artifacts_mode)
     artifact_lines = _artifact_lines(outcome.artifacts, mode=artifacts_mode)
     if artifact_lines:
         print("- artifacts:")
         for line in artifact_lines:
             print(f"  {line}")
     print(f"- trace: {outcome.trace_path}")
+
+
+def _print_research_brief(brief: dict[str, object], mode: str = "summary") -> None:
+    if mode == "none":
+        return
+    print("- research_brief:")
+    topic = brief.get("topic")
+    if topic:
+        print(f"  - topic: {topic}")
+    article_url = brief.get("article_url")
+    if article_url:
+        print(f"  - article_url: {article_url}")
+    summary = brief.get("summary")
+    if isinstance(summary, str) and summary.strip():
+        summary_text = summary if mode == "detailed" else summary[:280] + ("..." if len(summary) > 280 else "")
+        print(f"  - summary: {summary_text}")
+    section_headings = brief.get("section_headings")
+    if isinstance(section_headings, list) and section_headings:
+        headings_preview = section_headings if mode == "detailed" else section_headings[:8]
+        print(f"  - section_headings: {json.dumps(headings_preview, ensure_ascii=False)}")
+    sections = brief.get("sections")
+    if isinstance(sections, dict) and sections:
+        for name, value in sections.items():
+            if not isinstance(value, str) or not value.strip():
+                continue
+            section_preview = value if mode == "detailed" else value[:220] + ("..." if len(value) > 220 else "")
+            print(f"  - section[{name}]: {section_preview}")
+    citation_links = brief.get("citation_links")
+    if isinstance(citation_links, list) and citation_links:
+        citation_preview = citation_links if mode == "detailed" else citation_links[:3]
+        print(f"  - citation_links: {json.dumps(citation_preview, ensure_ascii=False)}")
+
+
+def _print_comparison_artifact(comparison: dict[str, object], mode: str = "summary") -> None:
+    if mode == "none":
+        return
+    print("- comparison:")
+    subject = comparison.get("subject")
+    if subject:
+        print(f"  - subject: {subject}")
+    output_mode = comparison.get("output_mode")
+    if output_mode:
+        print(f"  - output_mode: {output_mode}")
+    llm_reprocessing = comparison.get("isLLMReProcessingRequired")
+    if isinstance(llm_reprocessing, bool):
+        print(f"  - isLLMReProcessingRequired: {str(llm_reprocessing).lower()}")
+    metadata = comparison.get("metadata")
+    if isinstance(metadata, dict):
+        if metadata.get("llm_reprocessing_applied") is not None:
+            print(f"  - llm_reprocessing_applied: {str(bool(metadata.get('llm_reprocessing_applied'))).lower()}")
+        if metadata.get("llm_reprocessing_provider"):
+            print(f"  - llm_reprocessing_provider: {metadata.get('llm_reprocessing_provider')}")
+    columns = comparison.get("columns")
+    if isinstance(columns, list) and columns:
+        print(f"  - columns: {json.dumps(columns, ensure_ascii=False)}")
+    rows = comparison.get("rows")
+    if isinstance(rows, list) and rows:
+        row_preview = rows if mode == "detailed" else rows[:3]
+        print(f"  - rows: {json.dumps(row_preview, ensure_ascii=False)}")
+    csv_path = comparison.get("csv_path")
+    if csv_path:
+        print(f"  - csv_path: {csv_path}")
 
 
 def _build_action_stats(results: list) -> dict[str, dict[str, int]]:
@@ -422,15 +945,33 @@ def _build_action_stats(results: list) -> dict[str, dict[str, int]]:
     return stats
 
 
-def _collect_extract_artifacts(results: list) -> dict[str, Any]:
-    extracts: dict[str, Any] = {}
-    for result in results:
-        action_result = result.action_result
-        if action_result is None or action_result.action != "extract" or not action_result.ok:
-            continue
-        target = str(action_result.details.get("target") or "unknown")
-        extracts[target] = action_result.details.get("value")
-    return extracts
+def _attempt_fallback(
+    plan_result,
+    recorder: TraceRecorder,
+    trace,
+    executor: Executor,
+    trigger: str,
+) -> dict[str, Any] | None:
+    fallback_plan = get_fallback_plan(plan_result, trigger)
+    if fallback_plan is None:
+        return None
+    recorder.append_event(
+        trace,
+        {
+            "event": "fallback_plan_generated",
+            "strategy": fallback_plan.strategy_name,
+            "trigger": fallback_plan.trigger,
+            "step_count": len(fallback_plan.steps),
+        },
+    )
+    fallback_results = executor.run_steps(fallback_plan.steps)
+    return {
+        "strategy": fallback_plan.strategy_name,
+        "steps": fallback_plan.steps,
+        "results": fallback_results,
+        "extract_artifacts": collect_extract_artifacts(fallback_results),
+        "extract_sequence": collect_extract_sequence(fallback_results),
+    }
 
 
 def _run_reliability_series(

@@ -32,6 +32,7 @@ class FakePage:
             "table": "row1 row2",
             "#target": "Target text",
         }
+        self.evaluate_result = "Summary from evaluate"
 
     def goto(self, url: str) -> None:
         self.goto_urls.append(url)
@@ -48,6 +49,21 @@ class FakePage:
 
     def locator(self, selector: str) -> FakeLocator:
         return FakeLocator(self.locator_values[selector])
+
+    def evaluate(self, script: str, arg=None):
+        if "querySelectorAll('main p, article p, p')" in script:
+            return self.evaluate_result
+        if "reference a[href]" in script:
+            return [
+                {"text": "Example citation", "href": "https://example.com/citation"},
+                {"text": "Another citation", "href": "https://example.com/another"},
+            ]
+        if "normalizeHeading" in script and "sectionName" not in script:
+            return ["Early life", "Filmography", "Legacy"]
+        if "sectionName" in script:
+            assert arg == "Filmography"
+            return "Section paragraph one.\n\nSection paragraph two."
+        raise AssertionError("Unexpected evaluate script")
 
 
 def test_actions_execute_successfully() -> None:
@@ -81,9 +97,15 @@ def test_extract_uses_named_targets() -> None:
 
     summary = actions.extract("summary")
     table = actions.extract("table")
+    citation_links = actions.extract("citation_links")
+    section_headings = actions.extract("section_headings")
+    filmography = actions.extract("section:Filmography")
 
-    assert summary.details["value"] == "Summary text"
+    assert summary.details["value"] == "Summary from evaluate"
     assert table.details["value"] == "row1 row2"
+    assert citation_links.details["value"][0]["href"] == "https://example.com/citation"
+    assert section_headings.details["value"][1] == "Filmography"
+    assert "Section paragraph one." in filmography.details["value"]
 
 
 def test_extract_summary_uses_evaluate_on_real_pages() -> None:
@@ -96,6 +118,39 @@ def test_extract_summary_uses_evaluate_on_real_pages() -> None:
 
     assert result.ok is True
     assert result.details["value"] == "Summary from evaluate"
+
+
+def test_extract_citation_links_uses_evaluate_on_real_pages() -> None:
+    result = ActionAPI(lambda: FakePage()).extract("citation_links")
+
+    assert result.ok is True
+    assert result.details["value"][0]["href"] == "https://example.com/citation"
+
+
+def test_extract_section_headings_and_named_section_use_evaluate() -> None:
+    actions = ActionAPI(lambda: FakePage())
+
+    headings = actions.extract("section_headings")
+    section = actions.extract("section:Filmography")
+
+    assert headings.ok is True
+    assert headings.details["value"] == ["Early life", "Filmography", "Legacy"]
+    assert section.ok is True
+    assert "Section paragraph two." in section.details["value"]
+
+
+def test_extract_named_section_strips_edit_marker_only_results() -> None:
+    class EditMarkerPage(FakePage):
+        def evaluate(self, script: str, arg=None):
+            if "sectionName" in script:
+                return "Conservation actions paragraph.\n\nProtected habitat."
+            return super().evaluate(script, arg)
+
+    section = ActionAPI(lambda: EditMarkerPage()).extract("section:Conservation")
+
+    assert section.ok is True
+    assert "[edit]" not in section.details["value"]
+    assert "Protected habitat." in section.details["value"]
 
 
 def test_action_error_is_reported() -> None:

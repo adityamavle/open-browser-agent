@@ -11,6 +11,7 @@ SUPPORTED_VERIFICATION_KINDS = {
     "dom_contains",
     "artifact_exists",
     "artifact_text_contains",
+    "artifact_text_min_length",
     "artifact_list_min_length",
 }
 
@@ -68,4 +69,46 @@ ANTHROPIC_PLANNER_USER_PROMPT_LINES = (
     "args.target must be a short literal such as 'summary', 'table', or an explicit selector string. Never use a sentence as target.",
     "Prefer short plans of 3 to 6 steps.",
     "Do not browse outside the goal unnecessarily.",
+)
+
+COMPARISON_SYNTHESIS_SYSTEM_PROMPT = (
+    "You rewrite raw extracted web evidence into compact comparison rows. "
+    "Return JSON only. "
+    "Do not add commentary outside JSON. "
+    "Preserve entity_name and article_url exactly. "
+    "For each requested comparison column, produce a concise value suitable for a CSV cell. "
+    "Prefer short factual phrases over copied paragraphs. "
+    "Do not invent facts not grounded in the provided evidence. "
+    "If evidence is weak, keep the cell brief and conservative."
+)
+
+COMPARISON_SYNTHESIS_USER_PROMPT_LINES = (
+    "Return a JSON object with keys: rows.",
+    "rows must be a JSON array of objects.",
+    "Each row must contain entity_name, article_url, and the requested comparison columns only.",
+    "Keep each synthesized cell concise, ideally under 25 words.",
+    "Do not include citations or long reference dumps inside the main cell values.",
+)
+
+WIKIPEDIA_PLANNER_HINTS = (
+    "Wikipedia article URLs normally use the format https://en.wikipedia.org/wiki/Title_With_Underscores.",
+    "When the topic is clear, prefer direct navigation to the article URL instead of searching first.",
+    "If the direct article flow fails, the bounded fallback is: navigate to https://en.wikipedia.org/wiki/Main_Page, type the topic into input[name='search'], press Enter, wait_for main, then extract target='summary'.",
+    "For Wikipedia summary tasks, keep extract target exactly 'summary'.",
+    "For Wikipedia section tasks, valid logical extract targets include 'section_headings' and 'section:<Section Name>'.",
+    "Do not invent alternative sites or search engines for Wikipedia tasks.",
+)
+
+WIKIPEDIA_COMPARISON_PLANNER_HINTS = (
+    "For Wikipedia comparison tasks, prefer exactly 3 entity pages unless the user explicitly asks for more. Never exceed 5 pages.",
+    "If the user explicitly names comparison columns, preserve them when feasible.",
+    "If columns are underspecified, infer at most 5 topic-specific, comparison-relevant columns.",
+    "Do not invent filler columns such as notes, misc, or other.",
+    "Default to text comparison output unless the user explicitly asks for CSV, export, spreadsheet, or file output.",
+    "For comparison tasks, prefer task_id 'wikipedia-comparison' and include metadata.output_mode plus metadata.columns when known.",
+    "Only use existing Wikipedia extract targets that the runtime already supports: summary, citation_links, section_headings, and section:<Section Name>.",
+    "Choose section targets that are likely to exist across the selected Wikipedia pages.",
+    "Do not use extract target 'table' for Wikipedia comparison tasks. The comparison table is a synthesized output artifact, not a page-level extract target.",
+    "For each selected entity page, extract summary and any section targets needed for the requested comparison columns.",
+    "Keep comparison plans compact: avoid redundant expected fields, avoid citation extraction unless required, and keep the total step count as small as possible.",
 )

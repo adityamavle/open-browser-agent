@@ -22,6 +22,27 @@ def test_planner_returns_task_steps() -> None:
     assert plan.task_id == "wikipedia-summary"
 
 
+def test_planner_builds_dynamic_wikipedia_steps_for_topic_prompt() -> None:
+    planner = Planner()
+    plan = planner.plan("summarize Grace Hopper from Wikipedia")
+
+    assert plan.task_id == "wikipedia-summary"
+    assert plan.steps[0].args["url"] == "https://en.wikipedia.org/wiki/Grace_Hopper"
+    assert plan.steps[3].args["target"] == "citation_links"
+    assert plan.verification_rules[0].value == "Grace_Hopper"
+    assert plan.verification_rules[1].kind == "artifact_exists"
+
+
+def test_planner_builds_wikipedia_section_steps() -> None:
+    planner = Planner()
+    plan = planner.plan("extract the filmography section for Leonardo DiCaprio from Wikipedia")
+
+    assert plan.task_id == "wikipedia-section"
+    assert plan.steps[0].args["url"] == "https://en.wikipedia.org/wiki/Leonardo_DiCaprio"
+    assert plan.steps[2].args["target"] == "section_headings"
+    assert plan.steps[3].args["target"] == "section:Filmography"
+
+
 def test_planner_raises_for_missing_goal() -> None:
     planner = Planner()
 
@@ -125,6 +146,142 @@ def test_anthropic_prompt_includes_bundled_task_grounding() -> None:
     assert "Bundled task match: wikipedia-summary" in prompt
     assert "https://en.wikipedia.org/wiki/Ada_Lovelace" in prompt
     assert "extract(target=summary)" in prompt
+    assert "extract(target=citation_links)" in prompt
+    assert "Wikipedia article URLs normally use the format https://en.wikipedia.org/wiki/Title_With_Underscores." in prompt
+    assert "bounded fallback is: navigate to https://en.wikipedia.org/wiki/Main_Page" in prompt
+
+
+def test_anthropic_prompt_includes_dynamic_wikipedia_grounding() -> None:
+    provider = AnthropicPlannerProvider(api_key="test-key", model="claude-sonnet-4-6")
+
+    prompt = provider._build_user_prompt(
+        type("Req", (), {"goal": "summarize Grace Hopper from Wikipedia", "site": None, "observation_summary": {}})()
+    )
+
+    assert "Bundled task match: wikipedia-summary" in prompt
+    assert "https://en.wikipedia.org/wiki/Grace_Hopper" in prompt
+    assert "Extract a Wikipedia summary for Grace Hopper." in prompt
+    assert "prefer direct navigation to the article URL instead of searching first." in prompt
+
+
+def test_anthropic_prompt_includes_wikipedia_section_target_guidance() -> None:
+    provider = AnthropicPlannerProvider(api_key="test-key", model="claude-sonnet-4-6")
+
+    prompt = provider._build_user_prompt(
+        type(
+            "Req",
+            (),
+            {"goal": "extract the filmography section for Leonardo DiCaprio from Wikipedia", "site": None, "observation_summary": {}},
+        )()
+    )
+
+    assert "Bundled task match: wikipedia-section" in prompt
+    assert "extract(target=section_headings)" in prompt
+    assert "extract(target=section:Filmography)" in prompt
+    assert "valid logical extract targets include 'section_headings' and 'section:<Section Name>'." in prompt
+
+
+def test_anthropic_prompt_includes_wikipedia_comparison_constraints() -> None:
+    provider = AnthropicPlannerProvider(api_key="test-key", model="claude-sonnet-4-6")
+
+    prompt = provider._build_user_prompt(
+        type(
+            "Req",
+            (),
+            {
+                "goal": "Compare endangered birds in South America by population, habitat, and conservation initiatives and export to csv",
+                "site": None,
+                "observation_summary": {},
+            },
+        )()
+    )
+
+    assert "Comparison intent detected." in prompt
+    assert "Comparison subject: endangered birds in South America" in prompt
+    assert 'Requested columns (bounded): ["population", "habitat", "conservation initiatives"]' in prompt
+    assert "Requested output mode: csv" in prompt
+    assert "prefer exactly 3 entity pages unless the user explicitly asks for more." in prompt
+    assert "Default to text comparison output unless the user explicitly asks for CSV" in prompt
+    assert "prefer task_id 'wikipedia-comparison'" in prompt
+    assert "Do not use extract target 'table'" in prompt
+    assert "Only use existing Wikipedia extract targets that the runtime already supports" in prompt
+
+
+def test_planner_rejects_wikipedia_comparison_plan_with_table_extract() -> None:
+    class InvalidComparisonProvider:
+        name = "invalid-comparison-provider"
+
+        def plan(self, request) -> ProviderPlan:
+            _ = request
+            return ProviderPlan(
+                steps=[
+                    {"id": "1", "type": "goto", "args": {"url": "https://en.wikipedia.org/wiki/Spix%27s_macaw"}},
+                    {"id": "2", "type": "extract", "args": {"target": "summary"}},
+                    {"id": "3", "type": "goto", "args": {"url": "https://en.wikipedia.org/wiki/Lear%27s_macaw"}},
+                    {"id": "4", "type": "extract", "args": {"target": "summary"}},
+                    {"id": "5", "type": "extract", "args": {"target": "table"}},
+                ],
+                metadata={"columns": ["species", "population"]},
+            )
+
+    try:
+        Planner(provider=InvalidComparisonProvider()).plan(
+            "Compare endangered birds in South America by population and habitat"
+        )
+    except PlannerError as exc:
+        assert "must not use extract target 'table'" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected PlannerError")
+
+
+def test_planner_rejects_wikipedia_comparison_plan_when_no_section_target_can_be_inferred() -> None:
+    class MissingSectionProvider:
+        name = "missing-section-provider"
+
+        def plan(self, request) -> ProviderPlan:
+            _ = request
+            return ProviderPlan(
+                steps=[
+                    {"id": "1", "type": "goto", "args": {"url": "https://en.wikipedia.org/wiki/Spix%27s_macaw"}},
+                    {"id": "2", "type": "extract", "args": {"target": "summary"}},
+                    {"id": "3", "type": "goto", "args": {"url": "https://en.wikipedia.org/wiki/Lear%27s_macaw"}},
+                    {"id": "4", "type": "extract", "args": {"target": "summary"}},
+                ],
+                metadata={"columns": ["population"]},
+            )
+
+    try:
+        Planner(provider=MissingSectionProvider()).plan(
+            "Compare endangered birds in South America by population"
+        )
+    except PlannerError as exc:
+        assert "must extract at least one section target" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected PlannerError")
+
+
+def test_planner_normalizes_wikipedia_comparison_plan_by_inserting_section_extracts() -> None:
+    class SummaryOnlyComparisonProvider:
+        name = "summary-only-comparison-provider"
+
+        def plan(self, request) -> ProviderPlan:
+            _ = request
+            return ProviderPlan(
+                steps=[
+                    {"id": "1", "type": "goto", "args": {"url": "https://en.wikipedia.org/wiki/Spix%27s_macaw"}},
+                    {"id": "2", "type": "extract", "args": {"target": "summary"}},
+                    {"id": "3", "type": "goto", "args": {"url": "https://en.wikipedia.org/wiki/Lear%27s_macaw"}},
+                    {"id": "4", "type": "extract", "args": {"target": "summary"}},
+                ],
+                metadata={"columns": ["population", "habitat"]},
+            )
+
+    plan = Planner(provider=SummaryOnlyComparisonProvider()).plan(
+        "Compare endangered birds in South America by population and habitat"
+    )
+
+    targets = [step.args["target"] for step in plan.steps if step.type == "extract"]
+    assert targets == ["summary", "section:Habitat", "summary", "section:Habitat"]
 
 
 def test_planner_rejects_overlong_extract_target() -> None:
@@ -191,6 +348,72 @@ def test_anthropic_provider_parses_json_plan() -> None:
     assert plan.steps[0]["type"] == "navigate"
     assert plan.verification_rules[0].kind == "artifact_exists"
     assert plan.metadata["model"] == "claude-sonnet-4-20250514"
+
+
+def test_anthropic_provider_parses_python_literal_plan() -> None:
+    class FakeTransport:
+        def post_json(self, url, headers, payload, timeout_s):
+            _ = url, headers, payload, timeout_s
+            return {
+                "id": "resp_456",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "{'task_id': 'wiki-brief', 'verifier_hint': 'brief ready', "
+                            "'verification_rules': [{'kind': 'artifact_exists', 'value': 'extracts.summary', 'label': 'summary'}], "
+                            "'steps': [{'id': 's1', 'type': 'navigate', 'args': {'url': 'https://en.wikipedia.org/wiki/Ada_Lovelace'}, "
+                            "'expected': {}, 'timeout_ms': 10000}]}"
+                        ),
+                    }
+                ],
+            }
+
+    provider = AnthropicPlannerProvider(
+        api_key="test-key",
+        model="claude-sonnet-4-20250514",
+        transport=FakeTransport(),
+    )
+
+    plan = provider.plan(request=type("Req", (), {"goal": "research Ada Lovelace", "site": None, "observation_summary": {}})())
+
+    assert plan.task_id == "wiki-brief"
+    assert plan.steps[0]["type"] == "navigate"
+    assert plan.verification_rules[0].kind == "artifact_exists"
+
+
+def test_anthropic_provider_reports_max_tokens_truncation_clearly() -> None:
+    class FakeTransport:
+        def post_json(self, url, headers, payload, timeout_s):
+            _ = url, headers, payload, timeout_s
+            return {
+                "id": "resp_789",
+                "stop_reason": "max_tokens",
+                "content": [{"type": "text", "text": '{"task_id":"wikipedia-comparison","steps":[{"id":1'}],
+            }
+
+    provider = AnthropicPlannerProvider(
+        api_key="test-key",
+        model="claude-sonnet-4-20250514",
+        transport=FakeTransport(),
+    )
+
+    try:
+        provider.plan(
+            request=type(
+                "Req",
+                (),
+                {
+                    "goal": "Compare endangered birds in South America by population and habitat",
+                    "site": None,
+                    "observation_summary": {},
+                },
+            )()
+        )
+    except PlannerError as exc:
+        assert "truncated at max_tokens" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected PlannerError")
 
 
 def test_build_planner_supports_anthropic(monkeypatch) -> None:

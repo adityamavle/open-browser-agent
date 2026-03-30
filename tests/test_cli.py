@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 from types import SimpleNamespace
 
 from open_browser_agent import cli
+from open_browser_agent.schemas.observation import Observation
+from open_browser_agent.schemas.step import Step
+from open_browser_agent.strategies import get_fallback_plan
+from open_browser_agent.strategies.wikipedia import (
+    build_wikipedia_search_fallback_steps,
+    extract_wikipedia_topic_from_steps,
+)
 from open_browser_agent.tasks.registry import FORM_FILL_URL, TABLE_SCRAPE_URL, WIKIPEDIA_SUMMARY_URL
 
 
@@ -118,6 +126,7 @@ def test_handle_run_known_goal_suppresses_artifacts_when_disabled(tmp_path: Path
             self.summary_text = ""
             self.table_text = ""
             self.keyboard = type("Keyboard", (), {"press": lambda self, keys: None})()
+            self.citation_links = [{"text": "Citation 1", "href": "https://example.com/citation-1"}]
 
         def goto(self, url: str) -> None:
             self.url = url
@@ -137,6 +146,13 @@ def test_handle_run_known_goal_suppresses_artifacts_when_disabled(tmp_path: Path
 
         def locator(self, selector: str) -> FakeLocator:
             return FakeLocator(self, selector)
+
+        def evaluate(self, script: str):
+            if "querySelectorAll('main p, article p, p')" in script:
+                return self.summary_text
+            if "reference a[href]" in script:
+                return self.citation_links
+            raise AssertionError("Unexpected evaluate call")
 
         def title(self) -> str:
             return self.title_value
@@ -190,6 +206,7 @@ def test_handle_run_for_known_goal(tmp_path: Path, capsys) -> None:
             self.summary_text = ""
             self.table_text = "Last Name First Name Email Due Web Site Action Smith John jdoe@hotmail.com $50.00 http://www.jsmith.com edit delete"
             self.keyboard = type("Keyboard", (), {"press": lambda self, keys: None})()
+            self.citation_links = [{"text": "Citation 1", "href": "https://example.com/citation-1"}]
 
         def goto(self, url: str) -> None:
             self.url = url
@@ -215,6 +232,13 @@ def test_handle_run_for_known_goal(tmp_path: Path, capsys) -> None:
 
         def locator(self, selector: str) -> FakeLocator:
             return FakeLocator(self, selector)
+
+        def evaluate(self, script: str):
+            if "querySelectorAll('main p, article p, p')" in script:
+                return self.summary_text
+            if "reference a[href]" in script:
+                return self.citation_links
+            raise AssertionError("Unexpected evaluate call")
 
         def title(self) -> str:
             return self.title_value
@@ -247,6 +271,9 @@ def test_handle_run_for_known_goal(tmp_path: Path, capsys) -> None:
     assert "- planner: task-registry" in output
     assert "1. navigate https://en.wikipedia.org/wiki/Ada_Lovelace" in output
     assert "3. extract summary" in output
+    assert "4. extract citation_links" in output
+    assert "- research_brief:" in output
+    assert "  - topic: Ada Lovelace - Summary" in output
     assert "- artifacts:" in output
     assert "- summary: Ada Lovelace was an English mathematician and writer known for her work" in output
     assert "Verification checks: total=3 passed=3 failed=0" in output
@@ -285,6 +312,108 @@ def test_print_run_report_detailed_artifacts(capsys) -> None:
 
     assert "- artifacts:" in output
     assert "Line one.\nLine two." in output
+
+
+def test_build_run_artifacts_includes_wikipedia_research_brief() -> None:
+    observation = Observation(
+        url="https://en.wikipedia.org/wiki/Grace_Hopper",
+        title="Grace Hopper - Wikipedia",
+        visible_text="Visible text",
+        dom_summary=[],
+        form_state=[],
+        screenshot_path=None,
+    )
+
+    artifacts = cli._build_run_artifacts(
+        task_id="wikipedia-summary",
+        goal="summarize Grace Hopper from Wikipedia",
+        observation=observation,
+        extract_artifacts={
+            "summary": "Grace Hopper summary",
+            "citation_links": [{"text": "[1]", "href": "#cite_note-1"}],
+            "section_headings": ["Career", "Legacy"],
+            "section:Legacy": "Legacy text",
+        },
+    )
+
+    assert artifacts["isLLMReProcessingRequired"] is False
+    assert artifacts["research_brief"]["topic"] == "Grace Hopper"
+    assert artifacts["research_brief"]["summary"] == "Grace Hopper summary"
+    assert artifacts["research_brief"]["sections"]["Legacy"] == "Legacy text"
+
+
+def test_print_run_report_shows_research_brief(capsys) -> None:
+    outcome = cli.RunOutcome(
+        success=True,
+        reason="All verification rules passed.",
+        trace_path=Path("trace.json"),
+        task_id="wikipedia-section",
+        duration_ms=321,
+        planner_provider="task-registry",
+        steps=[],
+        artifacts={
+            "research_brief": {
+                "topic": "Leonardo DiCaprio",
+                "article_url": "https://en.wikipedia.org/wiki/Leonardo_DiCaprio",
+                "sections": {"Filmography": "Main articles: Leonardo DiCaprio filmography"},
+            },
+            "extracts": {"section:Filmography": "Main articles: Leonardo DiCaprio filmography"},
+        },
+    )
+
+    cli._print_run_report("extract the filmography section for Leonardo DiCaprio from Wikipedia", outcome, artifacts_mode="summary")
+    output = capsys.readouterr().out
+
+    assert "- research_brief:" in output
+    assert "  - topic: Leonardo DiCaprio" in output
+    assert "  - section[Filmography]: Main articles: Leonardo DiCaprio filmography" in output
+
+
+def test_extract_wikipedia_topic_from_steps() -> None:
+    steps = [
+        Step(
+            id="1",
+            type="navigate",
+            args={"url": "https://en.wikipedia.org/wiki/Grace_Hopper"},
+            expected={},
+            timeout_ms=1000,
+        )
+    ]
+
+    topic = extract_wikipedia_topic_from_steps(steps)
+
+    assert topic == "Grace Hopper"
+
+
+def test_build_wikipedia_search_fallback_steps() -> None:
+    steps = build_wikipedia_search_fallback_steps("Grace Hopper")
+
+    assert [step.type for step in steps] == ["navigate", "wait_for", "type", "press", "wait_for", "extract", "extract"]
+    assert steps[0].args["url"] == "https://en.wikipedia.org/wiki/Main_Page"
+    assert steps[2].args["text"] == "Grace Hopper"
+    assert steps[-2].args["target"] == "summary"
+    assert steps[-1].args["target"] == "citation_links"
+
+
+def test_get_fallback_plan_returns_wikipedia_strategy() -> None:
+    plan_result = SimpleNamespace(
+        task_id="wikipedia-summary",
+        steps=[
+            Step(
+                id="1",
+                type="navigate",
+                args={"url": "https://en.wikipedia.org/wiki/Grace_Hopper"},
+                expected={},
+                timeout_ms=1000,
+            )
+        ],
+    )
+
+    fallback = get_fallback_plan(plan_result, "Verification failed")
+
+    assert fallback is not None
+    assert fallback.strategy_name == "wikipedia-search-press"
+    assert fallback.steps[2].args["text"] == "Grace Hopper"
 
 
 def test_handle_replay(tmp_path: Path, capsys) -> None:
@@ -495,3 +624,210 @@ def test_handle_eval_defaults_to_all_tasks(monkeypatch, tmp_path: Path, capsys) 
     assert code == 0
     assert '"task": "form-fill"' in output
     assert '"task": "table-scrape"' in output
+
+
+def test_build_comparison_artifact_uses_extract_sequence() -> None:
+    observation = SimpleNamespace(url="https://en.wikipedia.org/wiki/Andean_condor", title="Andean condor - Wikipedia")
+    artifact = cli._build_comparison_artifact(
+        task_id="wikipedia-comparison",
+        goal="Compare endangered birds in South America by habitat and conservation initiatives and export to csv",
+        observation=observation,
+        extract_sequence=[
+            {
+                "step_id": "condor-habitat",
+                "target": "section:Habitat",
+                "value": "Andean mountains and open grasslands.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            },
+            {
+                "step_id": "condor-conservation",
+                "target": "section:Conservation initiatives",
+                "value": "Protected habitat and breeding programs.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            },
+            {
+                "step_id": "macaw-habitat",
+                "target": "section:Habitat",
+                "value": "Tropical forests in northern South America.",
+                "current_url": "https://en.wikipedia.org/wiki/Spix%27s_macaw",
+                "page_title": "Spix's macaw - Wikipedia",
+            },
+        ],
+        plan_metadata={"mode": "llm", "model": "claude-sonnet-4-6"},
+    )
+
+    assert artifact is not None
+    assert artifact["output_mode"] == "csv"
+    assert artifact["isLLMReProcessingRequired"] is True
+    assert artifact["columns"] == ["habitat", "conservation initiatives"]
+    assert artifact["raw_rows"][0]["habitat"] == "Andean mountains and open grasslands."
+    assert len(artifact["rows"]) == 2
+    assert artifact["rows"][0]["entity_name"] == "Andean condor"
+    assert artifact["rows"][0]["habitat"] == "Andean mountains and open grasslands."
+
+
+def test_build_run_artifacts_writes_csv_for_comparison_output(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)
+    observation = SimpleNamespace(url="https://en.wikipedia.org/wiki/Andean_condor", title="Andean condor - Wikipedia")
+
+    artifacts = cli._build_run_artifacts(
+        task_id="wikipedia-comparison",
+        goal="Compare endangered birds in South America by habitat and conservation initiatives and export to csv",
+        observation=observation,
+        extract_artifacts={},
+        extract_sequence=[
+            {
+                "step_id": "condor-habitat",
+                "target": "section:Habitat",
+                "value": "Andean mountains and open grasslands.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            },
+            {
+                "step_id": "condor-conservation",
+                "target": "section:Conservation initiatives",
+                "value": "Protected habitat and breeding programs.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            },
+        ],
+        plan_metadata={"mode": "llm", "model": "claude-sonnet-4-6"},
+        run_id="run123",
+    )
+
+    comparison = artifacts["comparison"]
+    assert isinstance(comparison, dict)
+    csv_path = Path(str(comparison["csv_path"]))
+    assert csv_path.exists()
+    assert csv_path == tmp_path / "artifacts" / "comparisons" / "endangered_birds_in_south_america_run123.csv"
+
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0]["entity_name"] == "Andean condor"
+    assert rows[0]["habitat"] == "Andean mountains and open grasslands."
+    assert rows[0]["conservation initiatives"] == "Protected habitat and breeding programs."
+
+
+def test_build_run_artifacts_does_not_write_csv_for_text_output(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)
+    observation = SimpleNamespace(url="https://en.wikipedia.org/wiki/Andean_condor", title="Andean condor - Wikipedia")
+
+    artifacts = cli._build_run_artifacts(
+        task_id="wikipedia-comparison",
+        goal="Compare endangered birds in South America by habitat and conservation initiatives",
+        observation=observation,
+        extract_artifacts={},
+        extract_sequence=[
+            {
+                "step_id": "condor-habitat",
+                "target": "section:Habitat",
+                "value": "Andean mountains and open grasslands.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            }
+        ],
+        plan_metadata={"mode": "llm", "model": "claude-sonnet-4-6"},
+        run_id="run124",
+    )
+
+    comparison = artifacts["comparison"]
+    assert isinstance(comparison, dict)
+    assert "csv_path" not in comparison
+    assert not (tmp_path / "artifacts" / "comparisons").exists()
+
+
+def test_artifact_lines_include_extract_sequence_count() -> None:
+    lines = cli._artifact_lines(
+        {
+            "extracts": {"summary": "Short summary"},
+            "extract_sequence": [{"step_id": "s1"}, {"step_id": "s2"}],
+        },
+        mode="summary",
+    )
+
+    assert any("extract_sequence: 2 extract events" in line for line in lines)
+
+
+def test_effective_verification_rules_for_wikipedia_comparison_use_artifacts() -> None:
+    rules = cli._effective_verification_rules(
+        task_id="wikipedia-comparison",
+        plan_rules=[],
+        plan_metadata={"entities": ["Spix's macaw", "Blue-throated macaw", "Lear's macaw"]},
+        artifacts={
+            "comparison": {
+                "output_mode": "csv",
+                "rows": [{}, {}, {}],
+                "csv_path": "C:/tmp/example.csv",
+            }
+        },
+    )
+
+    assert [rule.kind for rule in rules] == [
+        "artifact_exists",
+        "artifact_list_min_length",
+        "artifact_exists",
+    ]
+    assert rules[1].value == {"path": "comparison.rows", "min": 3}
+    assert rules[2].value == "comparison.csv_path"
+
+
+def test_is_llm_reprocessing_required_is_true_for_comparison_goal() -> None:
+    assert (
+        cli._is_llm_reprocessing_required(
+            task_id="wikipedia-comparison",
+            goal="Compare endangered birds in South America by habitat",
+            plan_metadata={},
+        )
+        is True
+    )
+
+
+def test_build_comparison_artifact_applies_llm_reprocessing(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_maybe_synthesize_comparison_rows",
+        lambda subject, columns, raw_rows, plan_metadata: {
+            "rows": [
+                {
+                    "entity_name": "Andean condor",
+                    "article_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                    "habitat": "High Andes grasslands",
+                    "conservation initiatives": "Protected areas and anti-poisoning work",
+                }
+            ],
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-6",
+        },
+    )
+    observation = SimpleNamespace(url="https://en.wikipedia.org/wiki/Andean_condor", title="Andean condor - Wikipedia")
+
+    artifact = cli._build_comparison_artifact(
+        task_id="wikipedia-comparison",
+        goal="Compare endangered birds in South America by habitat and conservation initiatives and export to csv",
+        observation=observation,
+        extract_sequence=[
+            {
+                "step_id": "condor-habitat",
+                "target": "section:Habitat",
+                "value": "Andean mountains and open grasslands.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            },
+            {
+                "step_id": "condor-conservation",
+                "target": "section:Conservation initiatives",
+                "value": "Protected habitat and breeding programs.",
+                "current_url": "https://en.wikipedia.org/wiki/Andean_condor",
+                "page_title": "Andean condor - Wikipedia",
+            },
+        ],
+        plan_metadata={"mode": "llm", "model": "claude-sonnet-4-6"},
+    )
+
+    assert artifact is not None
+    assert artifact["rows"][0]["habitat"] == "High Andes grasslands"
+    assert artifact["raw_rows"][0]["habitat"] == "Andean mountains and open grasslands."
+    assert artifact["metadata"]["llm_reprocessing_applied"] is True
+    assert artifact["metadata"]["llm_reprocessing_provider"] == "anthropic"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import os
 from dataclasses import dataclass, field
@@ -17,7 +18,10 @@ from open_browser_agent.constants.agent_constants import (
     ANTHROPIC_PLANNER_USER_PROMPT_LINES,
     REQUIRED_STEP_ARGS,
     SUPPORTED_VERIFICATION_KINDS,
+    WIKIPEDIA_COMPARISON_PLANNER_HINTS,
+    WIKIPEDIA_PLANNER_HINTS,
 )
+from open_browser_agent.comparison import parse_comparison_intent
 from open_browser_agent.schemas.step import Step
 from open_browser_agent.tasks.registry import find_task_by_goal
 from open_browser_agent.verifier import VerificationRule
@@ -187,7 +191,7 @@ class AnthropicPlannerProvider:
             timeout_s=self.timeout_s,
         )
         content = self._extract_message_content(response)
-        raw_plan = self._parse_plan_json(content)
+        raw_plan = self._parse_plan_json(content, response=response)
         steps = raw_plan.get("steps")
         if not isinstance(steps, list) or not steps:
             raise PlannerError("LLM planner response did not include a non-empty 'steps' list.")
@@ -236,6 +240,7 @@ class AnthropicPlannerProvider:
             *ANTHROPIC_PLANNER_USER_PROMPT_LINES,
         ]
         task = find_task_by_goal(request.goal)
+        comparison_intent = parse_comparison_intent(request.goal)
         if task is not None:
             lines.extend(
                 [
@@ -246,9 +251,25 @@ class AnthropicPlannerProvider:
                     f"Canonical step outline: {self._task_outline(task.steps)}",
                 ]
             )
+            lines.extend(self._task_specific_hints(task.task_id))
+        if comparison_intent is not None:
+            lines.extend(
+                [
+                    "Comparison intent detected.",
+                    f"Comparison subject: {comparison_intent.subject}",
+                    f"Requested output mode: {comparison_intent.output_mode}",
+                    f"Requested columns (bounded): {json.dumps(comparison_intent.requested_columns, ensure_ascii=True)}",
+                    *WIKIPEDIA_COMPARISON_PLANNER_HINTS,
+                ]
+            )
         if request.observation_summary:
             lines.append(f"Observation summary: {json.dumps(request.observation_summary, ensure_ascii=True)}")
         return "\n".join(lines)
+
+    def _task_specific_hints(self, task_id: str | None) -> tuple[str, ...]:
+        if task_id in {"wikipedia-summary", "wikipedia-search-press", "wikipedia-section", "wikipedia-section-headings"}:
+            return WIKIPEDIA_PLANNER_HINTS
+        return ()
 
     def _task_outline(self, steps: list[Step]) -> str:
         outline_parts: list[str] = []
@@ -279,7 +300,7 @@ class AnthropicPlannerProvider:
             raise PlannerError("Anthropic planner response did not include text content.")
         return "\n".join(part for part in text_parts if part)
 
-    def _parse_plan_json(self, content: str) -> dict[str, Any]:
+    def _parse_plan_json(self, content: str, response: dict[str, Any] | None = None) -> dict[str, Any]:
         stripped = content.strip()
         if stripped.startswith("```"):
             stripped = stripped.strip("`")
@@ -291,11 +312,35 @@ class AnthropicPlannerProvider:
             start = stripped.find("{")
             end = stripped.rfind("}")
             if start == -1 or end == -1 or start >= end:
-                raise PlannerError("LLM planner response did not contain valid JSON.") from None
+                parsed = self._parse_python_literal_dict(stripped)
+                if parsed is not None:
+                    return parsed
+                self._raise_parse_error(response, "LLM planner response did not contain valid JSON.")
             try:
                 return json.loads(stripped[start : end + 1])
             except json.JSONDecodeError as exc:
-                raise PlannerError("LLM planner response JSON could not be parsed.") from exc
+                parsed = self._parse_python_literal_dict(stripped[start : end + 1])
+                if parsed is not None:
+                    return parsed
+                self._raise_parse_error(response, "LLM planner response JSON could not be parsed.")
+
+    def _parse_python_literal_dict(self, content: str) -> dict[str, Any] | None:
+        try:
+            parsed = ast.literal_eval(content)
+        except (SyntaxError, ValueError):
+            return None
+        if isinstance(parsed, dict):
+            return parsed
+        return None
+
+    def _raise_parse_error(self, response: dict[str, Any] | None, default_message: str) -> None:
+        if isinstance(response, dict):
+            stop_reason = str(response.get("stop_reason") or "").strip().lower()
+            if stop_reason == "max_tokens":
+                raise PlannerError(
+                    "LLM planner response was truncated at max_tokens. Increase OBA_ANTHROPIC_MAX_TOKENS or shorten the comparison plan."
+                ) from None
+        raise PlannerError(default_message) from None
 
     def _coerce_verification_rules(self, raw_rules: Any) -> list[VerificationRule]:
         if raw_rules is None:
@@ -344,13 +389,16 @@ class Planner:
         request = PlanRequest(goal=goal, site=site, observation_summary=observation_summary or {})
         provider_plan = self.provider.plan(request)
         steps = [self._coerce_step(step) for step in provider_plan.steps]
+        steps = self._normalize_goal_specific_steps(goal=goal, steps=steps)
+        metadata = dict(provider_plan.metadata)
+        self._validate_goal_specific_constraints(goal=goal, steps=steps, metadata=metadata)
         return PlanResult(
             steps=steps,
             provider_name=self.provider.name,
             task_id=provider_plan.task_id,
             verifier_hint=provider_plan.verifier_hint,
             verification_rules=list(provider_plan.verification_rules),
-            metadata=dict(provider_plan.metadata),
+            metadata=metadata,
         )
 
     def _coerce_step(self, step: Step | dict[str, Any]) -> Step:
@@ -409,3 +457,101 @@ class Planner:
                 raise PlannerError("Planner step 'extract' requires a non-empty string target.")
             if len(target) > 120:
                 raise PlannerError("Planner step 'extract' target is too long and looks like a natural-language instruction.")
+
+    def _validate_goal_specific_constraints(
+        self,
+        goal: str,
+        steps: list[Step],
+        metadata: dict[str, Any],
+    ) -> None:
+        comparison_intent = parse_comparison_intent(goal)
+        if comparison_intent is None:
+            return
+
+        wiki_urls = [
+            str(step.args.get("url") or "")
+            for step in steps
+            if step.type in {"navigate", "goto"} and str(step.args.get("url") or "").startswith("https://en.wikipedia.org/wiki/")
+        ]
+        unique_wiki_urls = list(dict.fromkeys(wiki_urls))
+        if len(unique_wiki_urls) < 2:
+            raise PlannerError("Wikipedia comparison plans must visit at least 2 Wikipedia entity pages.")
+        if len(unique_wiki_urls) > 5:
+            raise PlannerError("Wikipedia comparison plans must not visit more than 5 entity pages.")
+
+        extract_targets = [
+            str(step.args.get("target") or "")
+            for step in steps
+            if step.type == "extract"
+        ]
+        if any(target == "table" for target in extract_targets):
+            raise PlannerError("Wikipedia comparison plans must not use extract target 'table'; the comparison table is synthesized after extraction.")
+
+        if comparison_intent.requested_columns:
+            section_targets = [target for target in extract_targets if target == "section_headings" or target.startswith("section:")]
+            if not section_targets:
+                raise PlannerError(
+                    "Wikipedia comparison plans with explicit columns must extract at least one section target in addition to summaries."
+                )
+
+        raw_columns = metadata.get("columns")
+        if raw_columns is not None:
+            if not isinstance(raw_columns, list):
+                raise PlannerError("Wikipedia comparison metadata.columns must be a list when provided.")
+            if len(raw_columns) > 5:
+                raise PlannerError("Wikipedia comparison metadata.columns must not exceed 5 entries.")
+
+    def _normalize_goal_specific_steps(self, goal: str, steps: list[Step]) -> list[Step]:
+        comparison_intent = parse_comparison_intent(goal)
+        if comparison_intent is None:
+            return steps
+        if any(
+            step.type == "extract"
+            and str(step.args.get("target") or "").startswith("section:")
+            for step in steps
+        ):
+            return steps
+
+        inferred_sections = self._comparison_section_targets(comparison_intent.requested_columns)
+        if not inferred_sections:
+            return steps
+
+        normalized: list[Step] = []
+        insert_index = 1
+        for step in steps:
+            normalized.append(step)
+            if step.type == "extract" and str(step.args.get("target") or "") == "summary":
+                for section_name in inferred_sections:
+                    normalized.append(
+                        Step(
+                            id=f"{step.id}-section-{insert_index}",
+                            type="extract",
+                            args={"target": f"section:{section_name}"},
+                            expected={},
+                            timeout_ms=step.timeout_ms,
+                        )
+                    )
+                    insert_index += 1
+        return normalized
+
+    def _comparison_section_targets(self, requested_columns: list[str]) -> list[str]:
+        section_map = (
+            ("conservation", "Conservation"),
+            ("habitat", "Habitat"),
+            ("physical attributes", "Description"),
+            ("description", "Description"),
+            ("status", "Status"),
+            ("distribution", "Distribution"),
+            ("ecology", "Ecology"),
+            ("diet", "Diet"),
+        )
+        targets: list[str] = []
+        normalized_columns = [" ".join(column.lower().split()) for column in requested_columns]
+        for column in normalized_columns:
+            for needle, section_name in section_map:
+                if needle in column and section_name not in targets:
+                    targets.append(section_name)
+                    break
+            if len(targets) >= 2:
+                break
+        return targets

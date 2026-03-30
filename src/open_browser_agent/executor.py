@@ -10,6 +10,7 @@ from open_browser_agent.trace import RunTrace, TraceRecorder
 
 @dataclass(slots=True)
 class ExecutionResult:
+    step_id: str
     success: bool
     message: str
     action_result: ActionResult | None = None
@@ -55,7 +56,7 @@ class Executor:
             )
 
         message = "Step completed." if action_result.ok else f"Step failed: {action_result.error}"
-        return ExecutionResult(success=action_result.ok, message=message, action_result=action_result)
+        return ExecutionResult(step_id=step.id, success=action_result.ok, message=message, action_result=action_result)
 
     def run_steps(self, steps: list[Step]) -> list[ExecutionResult]:
         results: list[ExecutionResult] = []

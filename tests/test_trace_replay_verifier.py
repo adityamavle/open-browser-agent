@@ -148,6 +148,11 @@ def test_verifier_accepts_artifact_rules() -> None:
                 label="summary extract",
             ),
             VerificationRule(
+                kind="artifact_text_min_length",
+                value={"path": "extracts.section", "min_chars": 10},
+                label="section extract",
+            ),
+            VerificationRule(
                 kind="artifact_list_min_length",
                 value={"path": "extracts.rows", "min": 2},
                 label="row count",
@@ -158,12 +163,12 @@ def test_verifier_accepts_artifact_rules() -> None:
     result = verifier.verify(
         VerificationInput(
             observation=observation,
-            artifacts={"extracts": {"table": "table text", "summary": "Ada summary", "rows": [1, 2]}},
+            artifacts={"extracts": {"table": "table text", "summary": "Ada summary", "section": "Long enough text", "rows": [1, 2]}},
         )
     )
 
     assert result.success is True
-    assert len(result.checks) == 3
+    assert len(result.checks) == 4
 
 
 def test_trace_schema_to_dict_helpers() -> None:
