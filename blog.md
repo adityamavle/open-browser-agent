@@ -134,6 +134,21 @@ And the values are synthesized into concise forms such as:
 
 That is much better than writing raw section dumps directly into CSV.
 
+## Example CSV Output
+
+When the prompt explicitly asks for CSV export, the run also writes a local comparison file.
+
+An example output looks like:
+
+```csv
+Species,Population,Habitat,Conservation Initiatives
+Spix's macaw,"Approximately 350-400 individuals in the wild; critically endangered","Caatinga dry forest in northeastern Brazil","Captive breeding, habitat restoration, managed reintroduction"
+Blue-throated macaw,"Small wild population concentrated in Bolivia","Seasonally flooded savanna and palm islands in Beni, Bolivia","Nest monitoring, land protection, community conservation programs"
+Lear's macaw,"Roughly a few thousand individuals with a restricted range","Arid scrub and sandstone cliff regions in Bahia, Brazil","Nest guarding, artificial nest support, protection of feeding habitat"
+```
+
+That makes the demo easier to understand for a reader because they can see the final artifact directly, not just the CLI flow that produced it.
+
 ## Current Limitations
 
 The project is still ongoing, and there are clear gaps.
