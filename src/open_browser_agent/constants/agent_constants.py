@@ -112,3 +112,11 @@ WIKIPEDIA_COMPARISON_PLANNER_HINTS = (
     "For each selected entity page, extract summary and any section targets needed for the requested comparison columns.",
     "Keep comparison plans compact: avoid redundant expected fields, avoid citation extraction unless required, and keep the total step count as small as possible.",
 )
+
+BESTBUY_COMPARISON_PLANNER_HINTS = (
+    "For Best Buy comparison tasks, stay within Best Buy search results and product detail pages only.",
+    "Use the existing Best Buy extract targets that the runtime supports: bestbuy_search_results, bestbuy_product_facts, and bestbuy_price.",
+    "Prefer a compact plan: open the relevant product pages, extract product facts, and synthesize the comparison artifact after execution.",
+    "Do not add cart, sign-in, shipping, store-selection, or checkout steps.",
+    "For Best Buy comparison tasks, prefer task_id 'bestbuy-laptop-comparison' when the goal is a bounded laptop comparison demo.",
+)

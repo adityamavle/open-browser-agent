@@ -63,6 +63,35 @@ class FakePage:
         if "sectionName" in script:
             assert arg == "Filmography"
             return "Section paragraph one.\n\nSection paragraph two."
+        if "document.querySelectorAll('[data-testid=\"sku-card\"], .sku-item, li.sku-item')" in script:
+            return [
+                {
+                    "title": "Laptop One",
+                    "href": "https://www.bestbuy.com/site/laptop-one/111.p",
+                    "price": "$999.00",
+                }
+            ]
+        if "document.querySelectorAll(" in script and "shop-specifications" in script:
+            return {
+                "entity_name": "Laptop One",
+                "product_name": "Laptop One",
+                "product_url": "https://www.bestbuy.com/site/laptop-one/111.p",
+                "sku": "111",
+                "price": "$999.00",
+                "specifications": {
+                    "Screen Size": "13.6 inches",
+                    "System Memory (RAM)": "16 gigabytes",
+                    "Solid State Drive Capacity": "512 gigabytes",
+                },
+                "facts": {
+                    "model name": "Laptop One",
+                    "display size": "13.6 inches",
+                    "ram": "16 gigabytes",
+                    "storage": "512 gigabytes",
+                },
+            }
+        if "document.querySelector(selector)" in script and ".priceView-customer-price" in script:
+            return "$999.00"
         raise AssertionError("Unexpected evaluate script")
 
 
@@ -100,12 +129,18 @@ def test_extract_uses_named_targets() -> None:
     citation_links = actions.extract("citation_links")
     section_headings = actions.extract("section_headings")
     filmography = actions.extract("section:Filmography")
+    product_facts = actions.extract("bestbuy_product_facts")
+    product_price = actions.extract("bestbuy_price")
+    search_results = actions.extract("bestbuy_search_results")
 
     assert summary.details["value"] == "Summary from evaluate"
     assert table.details["value"] == "row1 row2"
     assert citation_links.details["value"][0]["href"] == "https://example.com/citation"
     assert section_headings.details["value"][1] == "Filmography"
     assert "Section paragraph one." in filmography.details["value"]
+    assert product_facts.details["value"]["facts"]["ram"] == "16 gigabytes"
+    assert product_price.details["value"] == "$999.00"
+    assert search_results.details["value"][0]["href"] == "https://www.bestbuy.com/site/laptop-one/111.p"
 
 
 def test_extract_summary_uses_evaluate_on_real_pages() -> None:
@@ -151,6 +186,21 @@ def test_extract_named_section_strips_edit_marker_only_results() -> None:
     assert section.ok is True
     assert "[edit]" not in section.details["value"]
     assert "Protected habitat." in section.details["value"]
+
+
+def test_extract_bestbuy_targets_use_evaluate() -> None:
+    actions = ActionAPI(lambda: FakePage())
+
+    search_results = actions.extract("bestbuy_search_results")
+    product_facts = actions.extract("bestbuy_product_facts")
+    price = actions.extract("bestbuy_price")
+
+    assert search_results.ok is True
+    assert search_results.details["value"][0]["title"] == "Laptop One"
+    assert product_facts.ok is True
+    assert product_facts.details["value"]["sku"] == "111"
+    assert price.ok is True
+    assert price.details["value"] == "$999.00"
 
 
 def test_action_error_is_reported() -> None:

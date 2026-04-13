@@ -7,6 +7,7 @@ from open_browser_agent.planner import (
     ProviderPlan,
     build_planner,
 )
+from open_browser_agent.tasks.bestbuy_comparison import BESTBUY_COMPARISON_TASK
 from open_browser_agent.tasks.form_fill import FORM_FILL_TASK
 from open_browser_agent.tasks.table_scrape import TABLE_SCRAPE_TASK
 from open_browser_agent.tasks.wikipedia_summary import WIKIPEDIA_SUMMARY_TASK
@@ -41,6 +42,17 @@ def test_planner_builds_wikipedia_section_steps() -> None:
     assert plan.steps[0].args["url"] == "https://en.wikipedia.org/wiki/Leonardo_DiCaprio"
     assert plan.steps[2].args["target"] == "section_headings"
     assert plan.steps[3].args["target"] == "section:Filmography"
+
+
+def test_planner_builds_bestbuy_comparison_steps() -> None:
+    planner = Planner()
+    plan = planner.plan("Compare Best Buy laptops by price, display size, RAM, and storage and export to csv")
+
+    assert plan.task_id == "bestbuy-laptop-comparison"
+    assert plan.steps[0].args["url"].startswith("file:///")
+    assert plan.steps[2].args["target"] == "bestbuy_search_results"
+    assert plan.steps[5].args["target"] == "bestbuy_product_facts"
+    assert plan.verification_rules[0].value == "comparison"
 
 
 def test_planner_raises_for_missing_goal() -> None:
@@ -207,6 +219,28 @@ def test_anthropic_prompt_includes_wikipedia_comparison_constraints() -> None:
     assert "Only use existing Wikipedia extract targets that the runtime already supports" in prompt
 
 
+def test_anthropic_prompt_includes_bestbuy_comparison_constraints() -> None:
+    provider = AnthropicPlannerProvider(api_key="test-key", model="claude-sonnet-4-6")
+
+    prompt = provider._build_user_prompt(
+        type(
+            "Req",
+            (),
+            {
+                "goal": "Compare Best Buy laptops by price, display size, RAM, and storage and export to csv",
+                "site": None,
+                "observation_summary": {},
+            },
+        )()
+    )
+
+    assert "Bundled task match: bestbuy-laptop-comparison" in prompt
+    assert "Use the existing Best Buy extract targets that the runtime supports" in prompt
+    assert "bestbuy_search_results" in prompt
+    assert "bestbuy_product_facts" in prompt
+    assert "bestbuy_price" in prompt
+
+
 def test_planner_rejects_wikipedia_comparison_plan_with_table_extract() -> None:
     class InvalidComparisonProvider:
         name = "invalid-comparison-provider"
@@ -230,6 +264,57 @@ def test_planner_rejects_wikipedia_comparison_plan_with_table_extract() -> None:
         )
     except PlannerError as exc:
         assert "must not use extract target 'table'" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected PlannerError")
+
+
+def test_planner_rejects_bestbuy_comparison_plan_without_two_product_extracts() -> None:
+    class IncompleteBestBuyProvider:
+        name = "incomplete-bestbuy-provider"
+
+        def plan(self, request) -> ProviderPlan:
+            _ = request
+            return ProviderPlan(
+                steps=[
+                    {"id": "1", "type": "goto", "args": {"url": "file:///search.html"}},
+                    {"id": "2", "type": "extract", "args": {"target": "bestbuy_search_results"}},
+                    {"id": "3", "type": "goto", "args": {"url": "file:///product-1.html"}},
+                    {"id": "4", "type": "extract", "args": {"target": "bestbuy_product_facts"}},
+                ],
+            )
+
+    try:
+        Planner(provider=IncompleteBestBuyProvider()).plan(
+            "Compare Best Buy laptops by price, display size, RAM, and storage and export to csv"
+        )
+    except PlannerError as exc:
+        assert "at least 2 product pages" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected PlannerError")
+
+
+def test_planner_rejects_bestbuy_comparison_plan_with_unsupported_extract_target() -> None:
+    class InvalidBestBuyProvider:
+        name = "invalid-bestbuy-provider"
+
+        def plan(self, request) -> ProviderPlan:
+            _ = request
+            return ProviderPlan(
+                steps=[
+                    {"id": "1", "type": "goto", "args": {"url": "file:///product-1.html"}},
+                    {"id": "2", "type": "extract", "args": {"target": "bestbuy_product_facts"}},
+                    {"id": "3", "type": "goto", "args": {"url": "file:///product-2.html"}},
+                    {"id": "4", "type": "extract", "args": {"target": "bestbuy_product_facts"}},
+                    {"id": "5", "type": "extract", "args": {"target": "summary"}},
+                ],
+            )
+
+    try:
+        Planner(provider=InvalidBestBuyProvider()).plan(
+            "Compare Best Buy laptops by price, display size, RAM, and storage and export to csv"
+        )
+    except PlannerError as exc:
+        assert "may only use extract targets" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("Expected PlannerError")
 
@@ -442,6 +527,7 @@ def test_build_planner_reads_anthropic_key_from_dotenv(monkeypatch, tmp_path) ->
 
 
 def test_task_modules_export_expected_specs() -> None:
+    assert BESTBUY_COMPARISON_TASK.task_id == "bestbuy-laptop-comparison"
     assert FORM_FILL_TASK.task_id == "form-fill"
     assert TABLE_SCRAPE_TASK.task_id == "table-scrape"
     assert WIKIPEDIA_SUMMARY_TASK.task_id == "wikipedia-summary"

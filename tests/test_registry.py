@@ -67,3 +67,14 @@ def test_find_task_by_goal_builds_wikipedia_section_headings_task() -> None:
     assert task is not None
     assert task.task_id == "wikipedia-section-headings"
     assert task.steps[2].args["target"] == "section_headings"
+
+
+def test_find_task_by_goal_builds_bestbuy_comparison_task() -> None:
+    task = find_task_by_goal("Compare Best Buy laptops by price, display size, RAM, and storage and export to csv")
+
+    assert task is not None
+    assert task.task_id == "bestbuy-laptop-comparison"
+    assert task.steps[0].args["url"].startswith("file:///")
+    assert task.steps[2].args["target"] == "bestbuy_search_results"
+    assert task.steps[5].args["target"] == "bestbuy_product_facts"
+    assert task.steps[10].args["target"] == "bestbuy_price"

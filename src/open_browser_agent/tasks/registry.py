@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import quote, unquote
 
+from open_browser_agent.comparison import parse_comparison_intent
 from open_browser_agent.schemas.step import Step
 from open_browser_agent.verifier import VerificationRule
+
+
+def _fixture_url(filename: str) -> str:
+    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / filename
+    return fixture_path.as_uri()
 
 
 @dataclass(slots=True)
@@ -23,6 +30,9 @@ TABLE_SCRAPE_URL = "https://the-internet.herokuapp.com/tables"
 WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/wiki/Ada_Lovelace"
 WIKIPEDIA_MAIN_URL = "https://en.wikipedia.org/wiki/Main_Page"
 WIKIPEDIA_URL_PATTERN = re.compile(r"https?://en\.wikipedia\.org/wiki/(?P<slug>[^?#\s]+)", re.IGNORECASE)
+BESTBUY_SEARCH_FIXTURE_URL = _fixture_url("bestbuy_search_results.html")
+BESTBUY_MACBOOK_AIR_FIXTURE_URL = _fixture_url("bestbuy_macbook_air_13.html")
+BESTBUY_SURFACE_LAPTOP_FIXTURE_URL = _fixture_url("bestbuy_surface_laptop_13.html")
 
 
 TASKS: list[TaskSpec] = [
@@ -111,6 +121,29 @@ TASKS: list[TaskSpec] = [
             VerificationRule(kind="artifact_list_min_length", value={"path": "extracts.citation_links", "min": 1}, label="citation links"),
         ],
     ),
+    TaskSpec(
+        task_id="bestbuy-laptop-comparison",
+        summary="Compare two fixture-backed Best Buy laptop product pages and export a CSV-ready artifact.",
+        aliases=("compare best buy laptops", "compare bestbuy laptops"),
+        steps=[
+            Step(id="goto-bestbuy-search", type="navigate", args={"url": BESTBUY_SEARCH_FIXTURE_URL}),
+            Step(id="wait-bestbuy-search-results", type="wait_for", args={"selector": "[data-testid='sku-list']"}),
+            Step(id="extract-bestbuy-search-results", type="extract", args={"target": "bestbuy_search_results"}),
+            Step(id="goto-bestbuy-macbook-air", type="navigate", args={"url": BESTBUY_MACBOOK_AIR_FIXTURE_URL}),
+            Step(id="wait-bestbuy-product-one", type="wait_for", args={"selector": "[data-testid='product-title']"}),
+            Step(id="extract-bestbuy-product-one-facts", type="extract", args={"target": "bestbuy_product_facts"}),
+            Step(id="extract-bestbuy-product-one-price", type="extract", args={"target": "bestbuy_price"}),
+            Step(id="goto-bestbuy-surface-laptop", type="navigate", args={"url": BESTBUY_SURFACE_LAPTOP_FIXTURE_URL}),
+            Step(id="wait-bestbuy-product-two", type="wait_for", args={"selector": "[data-testid='product-title']"}),
+            Step(id="extract-bestbuy-product-two-facts", type="extract", args={"target": "bestbuy_product_facts"}),
+            Step(id="extract-bestbuy-product-two-price", type="extract", args={"target": "bestbuy_price"}),
+        ],
+        verifier_hint="Comparison rows include product facts for two Best Buy laptop pages, with CSV output when requested.",
+        verification_rules=[
+            VerificationRule(kind="artifact_exists", value="comparison", label="comparison artifact"),
+            VerificationRule(kind="artifact_list_min_length", value={"path": "comparison.rows", "min": 2}, label="comparison rows"),
+        ],
+    ),
 ]
 
 
@@ -121,6 +154,9 @@ def find_task_by_goal(goal: str) -> TaskSpec | None:
             return task
         if lowered and lowered in task.summary.lower():
             return task
+    dynamic_bestbuy_task = _build_bestbuy_comparison_task(goal)
+    if dynamic_bestbuy_task is not None:
+        return dynamic_bestbuy_task
     dynamic_wikipedia_section_task = _build_dynamic_wikipedia_section_task(goal)
     if dynamic_wikipedia_section_task is not None:
         return dynamic_wikipedia_section_task
@@ -128,6 +164,33 @@ def find_task_by_goal(goal: str) -> TaskSpec | None:
     if dynamic_wikipedia_task is not None:
         return dynamic_wikipedia_task
     return None
+
+
+def _build_bestbuy_comparison_task(goal: str) -> TaskSpec | None:
+    lowered = goal.strip().lower()
+    if "best buy" not in lowered and "bestbuy" not in lowered:
+        return None
+
+    comparison_intent = parse_comparison_intent(goal)
+    if comparison_intent is None:
+        return None
+
+    columns = comparison_intent.requested_columns or ["price", "display size", "RAM", "storage"]
+    verifier_hint = (
+        "Compare the two fixed Best Buy laptop fixtures and produce normalized comparison rows"
+        f" for columns: {', '.join(columns)}."
+    )
+    return TaskSpec(
+        task_id="bestbuy-laptop-comparison",
+        summary="Compare two fixture-backed Best Buy laptop product pages and export a CSV-ready artifact.",
+        aliases=("compare best buy laptops", "compare bestbuy laptops"),
+        steps=list(next(task for task in TASKS if task.task_id == "bestbuy-laptop-comparison").steps),
+        verifier_hint=verifier_hint,
+        verification_rules=[
+            VerificationRule(kind="artifact_exists", value="comparison", label="comparison artifact"),
+            VerificationRule(kind="artifact_list_min_length", value={"path": "comparison.rows", "min": 2}, label="comparison rows"),
+        ],
+    )
 
 
 def _build_dynamic_wikipedia_section_task(goal: str) -> TaskSpec | None:

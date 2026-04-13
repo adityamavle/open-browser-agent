@@ -1,0 +1,1435 @@
+{
+  "meta": {
+    "run_id": "66171da710e2454595eef478ca29a9a6",
+    "started_at": "2026-03-30T15:33:32.098140+00:00"
+  },
+  "goal": "Compare the top 5 Actors/Actresses with the most Oscars by Name,Age,Notable Films, Personal Life, Net Worth",
+  "task": "wikipedia-comparison",
+  "steps": [
+    {
+      "id": "1",
+      "type": "goto",
+      "args": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn"
+      },
+      "expected": {
+        "title": "Katharine Hepburn"
+      },
+      "timeout_ms": 10000
+    },
+    {
+      "id": "2",
+      "type": "extract",
+      "args": {
+        "target": "summary"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "3",
+      "type": "extract",
+      "args": {
+        "target": "section:Personal life"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "4",
+      "type": "goto",
+      "args": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep"
+      },
+      "expected": {
+        "title": "Meryl Streep"
+      },
+      "timeout_ms": 10000
+    },
+    {
+      "id": "5",
+      "type": "extract",
+      "args": {
+        "target": "summary"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "6",
+      "type": "extract",
+      "args": {
+        "target": "section:Personal life"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "7",
+      "type": "goto",
+      "args": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson"
+      },
+      "expected": {
+        "title": "Jack Nicholson"
+      },
+      "timeout_ms": 10000
+    },
+    {
+      "id": "8",
+      "type": "extract",
+      "args": {
+        "target": "summary"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "9",
+      "type": "extract",
+      "args": {
+        "target": "section:Personal life"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "10",
+      "type": "goto",
+      "args": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis"
+      },
+      "expected": {
+        "title": "Daniel Day-Lewis"
+      },
+      "timeout_ms": 10000
+    },
+    {
+      "id": "11",
+      "type": "extract",
+      "args": {
+        "target": "summary"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "12",
+      "type": "extract",
+      "args": {
+        "target": "section:Personal life"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "13",
+      "type": "goto",
+      "args": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman"
+      },
+      "expected": {
+        "title": "Ingrid Bergman"
+      },
+      "timeout_ms": 10000
+    },
+    {
+      "id": "14",
+      "type": "extract",
+      "args": {
+        "target": "summary"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    },
+    {
+      "id": "15",
+      "type": "extract",
+      "args": {
+        "target": "section:Personal life"
+      },
+      "expected": {},
+      "timeout_ms": 8000
+    }
+  ],
+  "events": [
+    {
+      "event": "plan_generated",
+      "provider": "anthropic",
+      "task_id": "wikipedia-comparison",
+      "step_count": 15,
+      "verifier_hint": "Compare top 5 Oscar-winning actors/actresses by Name, Age, Notable Films, Personal Life, Net Worth",
+      "metadata": {
+        "site": null,
+        "mode": "llm",
+        "model": "claude-sonnet-4-6",
+        "response_id": "msg_01G5T3qsAinqc5FRqBx16NHu",
+        "output_mode": "text",
+        "columns": [
+          "Name",
+          "Age",
+          "Notable Films",
+          "Personal Life",
+          "Net Worth"
+        ],
+        "entities": [
+          "Katharine Hepburn",
+          "Meryl Streep",
+          "Jack Nicholson",
+          "Daniel Day-Lewis",
+          "Ingrid Bergman"
+        ]
+      }
+    },
+    {
+      "step_id": "1",
+      "action": "goto",
+      "status": "ok",
+      "details": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "resolved_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "current_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "timeout_ms": 10000
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "about:blank",
+        "title": "",
+        "visible_text": "",
+        "dom_summary": [],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "title": "Katharine Hepburn - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\nPersonal life\nToggle Personal life subsection\nActing style and screen persona\nLegacy\nToggle Legacy subsection\nActing credits\nAwards and nominations\nSee also\nReferences\nToggle References subsection\nExternal links\nKatharine Hepburn\n102 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nKatharine Hepburn\n\n\nMGM studio publicity portrait, c.\u20091941\n\nBorn\tKatharine Houghton Hepburn\nMay 12, 1907\nHartford, Connecticut, U.S.\nDied\tJune 29, 2003 (aged\u00a096)\nOld Saybrook, Connecticut, U.S.\nResting place\tCedar Hill Cemetery\nEducation\tBryn Mawr College (BA)\nOccupation\tActress\nYears\u00a0active\t1928\u20131995\nWorks\tFull list\nPolitical party\tDemocratic\nSpouse\tLudlow Ogden Smith\n\u200b\n\u200b(m.\u00a01928; div.\u00a01934)\u200b\nPartner\tSpencer Tracy (1941\u20131967)\nMother\tKatharine M. Hepburn\nRelatives\tKatharine Houghton (niece)\nSchuyler Grant (grandniece)\nFamily\tSee Houghton family\nAwards\tFull list\n\nKatharine Hepburn's voice\nDuration: 12 seconds.\n0:12\nSample, from Stage Door (1937)\n\nSignature\n\n\nKatharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.\n\nRaised i",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "2",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "summary",
+        "value": "Katharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "page_title": "Katharine Hepburn - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "title": "Katharine Hepburn - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\nPersonal life\nToggle Personal life subsection\nActing style and screen persona\nLegacy\nToggle Legacy subsection\nActing credits\nAwards and nominations\nSee also\nReferences\nToggle References subsection\nExternal links\nKatharine Hepburn\n102 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nKatharine Hepburn\n\n\nMGM studio publicity portrait, c.\u20091941\n\nBorn\tKatharine Houghton Hepburn\nMay 12, 1907\nHartford, Connecticut, U.S.\nDied\tJune 29, 2003 (aged\u00a096)\nOld Saybrook, Connecticut, U.S.\nResting place\tCedar Hill Cemetery\nEducation\tBryn Mawr College (BA)\nOccupation\tActress\nYears\u00a0active\t1928\u20131995\nWorks\tFull list\nPolitical party\tDemocratic\nSpouse\tLudlow Ogden Smith\n\u200b\n\u200b(m.\u00a01928; div.\u00a01934)\u200b\nPartner\tSpencer Tracy (1941\u20131967)\nMother\tKatharine M. Hepburn\nRelatives\tKatharine Houghton (niece)\nSchuyler Grant (grandniece)\nFamily\tSee Houghton family\nAwards\tFull list\n\nKatharine Hepburn's voice\nDuration: 12 seconds.\n0:12\nSample, from Stage Door (1937)\n\nSignature\n\n\nKatharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.\n\nRaised i",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "title": "Katharine Hepburn - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\nPersonal life\nToggle Personal life subsection\nActing style and screen persona\nLegacy\nToggle Legacy subsection\nActing credits\nAwards and nominations\nSee also\nReferences\nToggle References subsection\nExternal links\nKatharine Hepburn\n102 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nKatharine Hepburn\n\n\nMGM studio publicity portrait, c.\u20091941\n\nBorn\tKatharine Houghton Hepburn\nMay 12, 1907\nHartford, Connecticut, U.S.\nDied\tJune 29, 2003 (aged\u00a096)\nOld Saybrook, Connecticut, U.S.\nResting place\tCedar Hill Cemetery\nEducation\tBryn Mawr College (BA)\nOccupation\tActress\nYears\u00a0active\t1928\u20131995\nWorks\tFull list\nPolitical party\tDemocratic\nSpouse\tLudlow Ogden Smith\n\u200b\n\u200b(m.\u00a01928; div.\u00a01934)\u200b\nPartner\tSpencer Tracy (1941\u20131967)\nMother\tKatharine M. Hepburn\nRelatives\tKatharine Houghton (niece)\nSchuyler Grant (grandniece)\nFamily\tSee Houghton family\nAwards\tFull list\n\nKatharine Hepburn's voice\nDuration: 12 seconds.\n0:12\nSample, from Stage Door (1937)\n\nSignature\n\n\nKatharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.\n\nRaised i",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "3",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "section:Personal life",
+        "value": "",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "page_title": "Katharine Hepburn - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "title": "Katharine Hepburn - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\nPersonal life\nToggle Personal life subsection\nActing style and screen persona\nLegacy\nToggle Legacy subsection\nActing credits\nAwards and nominations\nSee also\nReferences\nToggle References subsection\nExternal links\nKatharine Hepburn\n102 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nKatharine Hepburn\n\n\nMGM studio publicity portrait, c.\u20091941\n\nBorn\tKatharine Houghton Hepburn\nMay 12, 1907\nHartford, Connecticut, U.S.\nDied\tJune 29, 2003 (aged\u00a096)\nOld Saybrook, Connecticut, U.S.\nResting place\tCedar Hill Cemetery\nEducation\tBryn Mawr College (BA)\nOccupation\tActress\nYears\u00a0active\t1928\u20131995\nWorks\tFull list\nPolitical party\tDemocratic\nSpouse\tLudlow Ogden Smith\n\u200b\n\u200b(m.\u00a01928; div.\u00a01934)\u200b\nPartner\tSpencer Tracy (1941\u20131967)\nMother\tKatharine M. Hepburn\nRelatives\tKatharine Houghton (niece)\nSchuyler Grant (grandniece)\nFamily\tSee Houghton family\nAwards\tFull list\n\nKatharine Hepburn's voice\nDuration: 12 seconds.\n0:12\nSample, from Stage Door (1937)\n\nSignature\n\n\nKatharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.\n\nRaised i",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "title": "Katharine Hepburn - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\nPersonal life\nToggle Personal life subsection\nActing style and screen persona\nLegacy\nToggle Legacy subsection\nActing credits\nAwards and nominations\nSee also\nReferences\nToggle References subsection\nExternal links\nKatharine Hepburn\n102 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nKatharine Hepburn\n\n\nMGM studio publicity portrait, c.\u20091941\n\nBorn\tKatharine Houghton Hepburn\nMay 12, 1907\nHartford, Connecticut, U.S.\nDied\tJune 29, 2003 (aged\u00a096)\nOld Saybrook, Connecticut, U.S.\nResting place\tCedar Hill Cemetery\nEducation\tBryn Mawr College (BA)\nOccupation\tActress\nYears\u00a0active\t1928\u20131995\nWorks\tFull list\nPolitical party\tDemocratic\nSpouse\tLudlow Ogden Smith\n\u200b\n\u200b(m.\u00a01928; div.\u00a01934)\u200b\nPartner\tSpencer Tracy (1941\u20131967)\nMother\tKatharine M. Hepburn\nRelatives\tKatharine Houghton (niece)\nSchuyler Grant (grandniece)\nFamily\tSee Houghton family\nAwards\tFull list\n\nKatharine Hepburn's voice\nDuration: 12 seconds.\n0:12\nSample, from Stage Door (1937)\n\nSignature\n\n\nKatharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.\n\nRaised i",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "4",
+      "action": "goto",
+      "status": "ok",
+      "details": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "resolved_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "current_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "timeout_ms": 10000
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "title": "Katharine Hepburn - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\nPersonal life\nToggle Personal life subsection\nActing style and screen persona\nLegacy\nToggle Legacy subsection\nActing credits\nAwards and nominations\nSee also\nReferences\nToggle References subsection\nExternal links\nKatharine Hepburn\n102 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nKatharine Hepburn\n\n\nMGM studio publicity portrait, c.\u20091941\n\nBorn\tKatharine Houghton Hepburn\nMay 12, 1907\nHartford, Connecticut, U.S.\nDied\tJune 29, 2003 (aged\u00a096)\nOld Saybrook, Connecticut, U.S.\nResting place\tCedar Hill Cemetery\nEducation\tBryn Mawr College (BA)\nOccupation\tActress\nYears\u00a0active\t1928\u20131995\nWorks\tFull list\nPolitical party\tDemocratic\nSpouse\tLudlow Ogden Smith\n\u200b\n\u200b(m.\u00a01928; div.\u00a01934)\u200b\nPartner\tSpencer Tracy (1941\u20131967)\nMother\tKatharine M. Hepburn\nRelatives\tKatharine Houghton (niece)\nSchuyler Grant (grandniece)\nFamily\tSee Houghton family\nAwards\tFull list\n\nKatharine Hepburn's voice\nDuration: 12 seconds.\n0:12\nSample, from Stage Door (1937)\n\nSignature\n\n\nKatharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.\n\nRaised i",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "title": "Meryl Streep - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1970s: Early work and breakthrough\n1980s: Rise to prominence\n1990s: Commercial fluctuations\n2000s: Career resurgence and stage work\n2010s: Further critical and commercial success\n2020s: Streaming and theatrical projects\nUpcoming projects\nOther ventures\nReception and legacy\nActivism and advocacy\nPersonal life\nToggle Personal life subsection\nRelationships and family\nBeliefs\nActing credits and awards\nDiscography\nToggle Discography subsection\nAlbums\nSingles\nSee also\nNotes\nReferences\nSources\nFurther reading\nExternal links\nMeryl Streep\n113 languages\nArticle\nTalk\nRead\nView source\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nMeryl Streep\n\n\nStreep at the 2024 Cannes Film Festival\n\nBorn\tMary Louise Streep\nJune 22, 1949 (age\u00a076)\nSummit, New Jersey, U.S.\nEducation\t\nVassar College (AB)\nYale University (MFA)\n\nOccupation\tActress\nYears\u00a0active\t1975\u2013present\nWorks\tFull list\nSpouse\tDon Gummer\n\u200b\n\u200b(m.\u00a01978; sep.\u00a02017)\u200b\nPartner(s)\tJohn Cazale\n(1976\u20131978)\nChildren\t\nHenry Wolfe\nMamie Gummer\nGrace Gummer\nLouisa Jacobson\n\nMother\tMary Wilkinson Streep\nAwards\tFull list\nSignature\n\n\nMary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, lab",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "5",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "summary",
+        "value": "Mary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, labor protections, and a challenge to the influence of the male gaze in film criticism and production.[4]",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "page_title": "Meryl Streep - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "title": "Meryl Streep - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1970s: Early work and breakthrough\n1980s: Rise to prominence\n1990s: Commercial fluctuations\n2000s: Career resurgence and stage work\n2010s: Further critical and commercial success\n2020s: Streaming and theatrical projects\nUpcoming projects\nOther ventures\nReception and legacy\nActivism and advocacy\nPersonal life\nToggle Personal life subsection\nRelationships and family\nBeliefs\nActing credits and awards\nDiscography\nToggle Discography subsection\nAlbums\nSingles\nSee also\nNotes\nReferences\nSources\nFurther reading\nExternal links\nMeryl Streep\n113 languages\nArticle\nTalk\nRead\nView source\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nMeryl Streep\n\n\nStreep at the 2024 Cannes Film Festival\n\nBorn\tMary Louise Streep\nJune 22, 1949 (age\u00a076)\nSummit, New Jersey, U.S.\nEducation\t\nVassar College (AB)\nYale University (MFA)\n\nOccupation\tActress\nYears\u00a0active\t1975\u2013present\nWorks\tFull list\nSpouse\tDon Gummer\n\u200b\n\u200b(m.\u00a01978; sep.\u00a02017)\u200b\nPartner(s)\tJohn Cazale\n(1976\u20131978)\nChildren\t\nHenry Wolfe\nMamie Gummer\nGrace Gummer\nLouisa Jacobson\n\nMother\tMary Wilkinson Streep\nAwards\tFull list\nSignature\n\n\nMary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, lab",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "title": "Meryl Streep - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1970s: Early work and breakthrough\n1980s: Rise to prominence\n1990s: Commercial fluctuations\n2000s: Career resurgence and stage work\n2010s: Further critical and commercial success\n2020s: Streaming and theatrical projects\nUpcoming projects\nOther ventures\nReception and legacy\nActivism and advocacy\nPersonal life\nToggle Personal life subsection\nRelationships and family\nBeliefs\nActing credits and awards\nDiscography\nToggle Discography subsection\nAlbums\nSingles\nSee also\nNotes\nReferences\nSources\nFurther reading\nExternal links\nMeryl Streep\n113 languages\nArticle\nTalk\nRead\nView source\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nMeryl Streep\n\n\nStreep at the 2024 Cannes Film Festival\n\nBorn\tMary Louise Streep\nJune 22, 1949 (age\u00a076)\nSummit, New Jersey, U.S.\nEducation\t\nVassar College (AB)\nYale University (MFA)\n\nOccupation\tActress\nYears\u00a0active\t1975\u2013present\nWorks\tFull list\nSpouse\tDon Gummer\n\u200b\n\u200b(m.\u00a01978; sep.\u00a02017)\u200b\nPartner(s)\tJohn Cazale\n(1976\u20131978)\nChildren\t\nHenry Wolfe\nMamie Gummer\nGrace Gummer\nLouisa Jacobson\n\nMother\tMary Wilkinson Streep\nAwards\tFull list\nSignature\n\n\nMary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, lab",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "6",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "section:Personal life",
+        "value": "",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "page_title": "Meryl Streep - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "title": "Meryl Streep - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1970s: Early work and breakthrough\n1980s: Rise to prominence\n1990s: Commercial fluctuations\n2000s: Career resurgence and stage work\n2010s: Further critical and commercial success\n2020s: Streaming and theatrical projects\nUpcoming projects\nOther ventures\nReception and legacy\nActivism and advocacy\nPersonal life\nToggle Personal life subsection\nRelationships and family\nBeliefs\nActing credits and awards\nDiscography\nToggle Discography subsection\nAlbums\nSingles\nSee also\nNotes\nReferences\nSources\nFurther reading\nExternal links\nMeryl Streep\n113 languages\nArticle\nTalk\nRead\nView source\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nMeryl Streep\n\n\nStreep at the 2024 Cannes Film Festival\n\nBorn\tMary Louise Streep\nJune 22, 1949 (age\u00a076)\nSummit, New Jersey, U.S.\nEducation\t\nVassar College (AB)\nYale University (MFA)\n\nOccupation\tActress\nYears\u00a0active\t1975\u2013present\nWorks\tFull list\nSpouse\tDon Gummer\n\u200b\n\u200b(m.\u00a01978; sep.\u00a02017)\u200b\nPartner(s)\tJohn Cazale\n(1976\u20131978)\nChildren\t\nHenry Wolfe\nMamie Gummer\nGrace Gummer\nLouisa Jacobson\n\nMother\tMary Wilkinson Streep\nAwards\tFull list\nSignature\n\n\nMary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, lab",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "title": "Meryl Streep - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1970s: Early work and breakthrough\n1980s: Rise to prominence\n1990s: Commercial fluctuations\n2000s: Career resurgence and stage work\n2010s: Further critical and commercial success\n2020s: Streaming and theatrical projects\nUpcoming projects\nOther ventures\nReception and legacy\nActivism and advocacy\nPersonal life\nToggle Personal life subsection\nRelationships and family\nBeliefs\nActing credits and awards\nDiscography\nToggle Discography subsection\nAlbums\nSingles\nSee also\nNotes\nReferences\nSources\nFurther reading\nExternal links\nMeryl Streep\n113 languages\nArticle\nTalk\nRead\nView source\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nMeryl Streep\n\n\nStreep at the 2024 Cannes Film Festival\n\nBorn\tMary Louise Streep\nJune 22, 1949 (age\u00a076)\nSummit, New Jersey, U.S.\nEducation\t\nVassar College (AB)\nYale University (MFA)\n\nOccupation\tActress\nYears\u00a0active\t1975\u2013present\nWorks\tFull list\nSpouse\tDon Gummer\n\u200b\n\u200b(m.\u00a01978; sep.\u00a02017)\u200b\nPartner(s)\tJohn Cazale\n(1976\u20131978)\nChildren\t\nHenry Wolfe\nMamie Gummer\nGrace Gummer\nLouisa Jacobson\n\nMother\tMary Wilkinson Streep\nAwards\tFull list\nSignature\n\n\nMary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, lab",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "7",
+      "action": "goto",
+      "status": "ok",
+      "details": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "resolved_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "current_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "timeout_ms": 10000
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "title": "Meryl Streep - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1970s: Early work and breakthrough\n1980s: Rise to prominence\n1990s: Commercial fluctuations\n2000s: Career resurgence and stage work\n2010s: Further critical and commercial success\n2020s: Streaming and theatrical projects\nUpcoming projects\nOther ventures\nReception and legacy\nActivism and advocacy\nPersonal life\nToggle Personal life subsection\nRelationships and family\nBeliefs\nActing credits and awards\nDiscography\nToggle Discography subsection\nAlbums\nSingles\nSee also\nNotes\nReferences\nSources\nFurther reading\nExternal links\nMeryl Streep\n113 languages\nArticle\nTalk\nRead\nView source\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nMeryl Streep\n\n\nStreep at the 2024 Cannes Film Festival\n\nBorn\tMary Louise Streep\nJune 22, 1949 (age\u00a076)\nSummit, New Jersey, U.S.\nEducation\t\nVassar College (AB)\nYale University (MFA)\n\nOccupation\tActress\nYears\u00a0active\t1975\u2013present\nWorks\tFull list\nSpouse\tDon Gummer\n\u200b\n\u200b(m.\u00a01978; sep.\u00a02017)\u200b\nPartner(s)\tJohn Cazale\n(1976\u20131978)\nChildren\t\nHenry Wolfe\nMamie Gummer\nGrace Gummer\nLouisa Jacobson\n\nMother\tMary Wilkinson Streep\nAwards\tFull list\nSignature\n\n\nMary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, lab",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "title": "Jack Nicholson - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nMilitary service\nCareer\nToggle Career subsection\n1958\u20131969: Early roles and breakthrough\n1970\u20131989: Stardom and acclaim\n1990\u20131999: Established actor\n2000\u2013present: Later roles and extended break\nInfluence\nActing credits and accolades\nUnrealized Napoleon project\nPersonal life\nToggle Personal life subsection\nRelationships and children\nLegal issues\nCelebrity friendships\nHobbies\nPolitical views\nReligious beliefs\nSee also\nExplanatory notes\nReferences\nGeneral and cited bibliography\nExternal links\nJack Nicholson\n109 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nThis article is about the American actor. For the footballer, see Jack Nicholson (footballer).\nJack Nicholson\n\n\nNicholson in 2002\n\nBorn\tJohn Joseph Nicholson\nApril 22, 1937 (age\u00a088)\nNeptune City, New Jersey, U.S.\nOccupations\t\nActorfilmmaker\n\nYears\u00a0active\t1955\u20132010\nWorks\tFilmography\nSpouse\tSandra Knight\n\u200b\n\u200b(m.\u00a01962; div.\u00a01968)\u200b\nPartners\t\nAnjelica Huston (1973\u20131990)\nRebecca Broussard (1989\u20131994)\nLara Flynn Boyle (1999\u20132004)\n\nChildren\t6, including Lorraine and Ray\nAwards\tFull list\nSignature\n\n\nJohn Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.\n\nNicholson won Academy Awards for Best Actor for playing Randle McMurphy in One Flew Over the Cuckoo's Nest (1975) and an author with OCD in As Good as It Gets (1997), as well as for Best Su",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "8",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "summary",
+        "value": "John Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "page_title": "Jack Nicholson - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "title": "Jack Nicholson - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nMilitary service\nCareer\nToggle Career subsection\n1958\u20131969: Early roles and breakthrough\n1970\u20131989: Stardom and acclaim\n1990\u20131999: Established actor\n2000\u2013present: Later roles and extended break\nInfluence\nActing credits and accolades\nUnrealized Napoleon project\nPersonal life\nToggle Personal life subsection\nRelationships and children\nLegal issues\nCelebrity friendships\nHobbies\nPolitical views\nReligious beliefs\nSee also\nExplanatory notes\nReferences\nGeneral and cited bibliography\nExternal links\nJack Nicholson\n109 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nThis article is about the American actor. For the footballer, see Jack Nicholson (footballer).\nJack Nicholson\n\n\nNicholson in 2002\n\nBorn\tJohn Joseph Nicholson\nApril 22, 1937 (age\u00a088)\nNeptune City, New Jersey, U.S.\nOccupations\t\nActorfilmmaker\n\nYears\u00a0active\t1955\u20132010\nWorks\tFilmography\nSpouse\tSandra Knight\n\u200b\n\u200b(m.\u00a01962; div.\u00a01968)\u200b\nPartners\t\nAnjelica Huston (1973\u20131990)\nRebecca Broussard (1989\u20131994)\nLara Flynn Boyle (1999\u20132004)\n\nChildren\t6, including Lorraine and Ray\nAwards\tFull list\nSignature\n\n\nJohn Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.\n\nNicholson won Academy Awards for Best Actor for playing Randle McMurphy in One Flew Over the Cuckoo's Nest (1975) and an author with OCD in As Good as It Gets (1997), as well as for Best Su",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "title": "Jack Nicholson - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nMilitary service\nCareer\nToggle Career subsection\n1958\u20131969: Early roles and breakthrough\n1970\u20131989: Stardom and acclaim\n1990\u20131999: Established actor\n2000\u2013present: Later roles and extended break\nInfluence\nActing credits and accolades\nUnrealized Napoleon project\nPersonal life\nToggle Personal life subsection\nRelationships and children\nLegal issues\nCelebrity friendships\nHobbies\nPolitical views\nReligious beliefs\nSee also\nExplanatory notes\nReferences\nGeneral and cited bibliography\nExternal links\nJack Nicholson\n109 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nThis article is about the American actor. For the footballer, see Jack Nicholson (footballer).\nJack Nicholson\n\n\nNicholson in 2002\n\nBorn\tJohn Joseph Nicholson\nApril 22, 1937 (age\u00a088)\nNeptune City, New Jersey, U.S.\nOccupations\t\nActorfilmmaker\n\nYears\u00a0active\t1955\u20132010\nWorks\tFilmography\nSpouse\tSandra Knight\n\u200b\n\u200b(m.\u00a01962; div.\u00a01968)\u200b\nPartners\t\nAnjelica Huston (1973\u20131990)\nRebecca Broussard (1989\u20131994)\nLara Flynn Boyle (1999\u20132004)\n\nChildren\t6, including Lorraine and Ray\nAwards\tFull list\nSignature\n\n\nJohn Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.\n\nNicholson won Academy Awards for Best Actor for playing Randle McMurphy in One Flew Over the Cuckoo's Nest (1975) and an author with OCD in As Good as It Gets (1997), as well as for Best Su",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "9",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "section:Personal life",
+        "value": "show Nicholson's children",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "page_title": "Jack Nicholson - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "title": "Jack Nicholson - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nMilitary service\nCareer\nToggle Career subsection\n1958\u20131969: Early roles and breakthrough\n1970\u20131989: Stardom and acclaim\n1990\u20131999: Established actor\n2000\u2013present: Later roles and extended break\nInfluence\nActing credits and accolades\nUnrealized Napoleon project\nPersonal life\nToggle Personal life subsection\nRelationships and children\nLegal issues\nCelebrity friendships\nHobbies\nPolitical views\nReligious beliefs\nSee also\nExplanatory notes\nReferences\nGeneral and cited bibliography\nExternal links\nJack Nicholson\n109 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nThis article is about the American actor. For the footballer, see Jack Nicholson (footballer).\nJack Nicholson\n\n\nNicholson in 2002\n\nBorn\tJohn Joseph Nicholson\nApril 22, 1937 (age\u00a088)\nNeptune City, New Jersey, U.S.\nOccupations\t\nActorfilmmaker\n\nYears\u00a0active\t1955\u20132010\nWorks\tFilmography\nSpouse\tSandra Knight\n\u200b\n\u200b(m.\u00a01962; div.\u00a01968)\u200b\nPartners\t\nAnjelica Huston (1973\u20131990)\nRebecca Broussard (1989\u20131994)\nLara Flynn Boyle (1999\u20132004)\n\nChildren\t6, including Lorraine and Ray\nAwards\tFull list\nSignature\n\n\nJohn Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.\n\nNicholson won Academy Awards for Best Actor for playing Randle McMurphy in One Flew Over the Cuckoo's Nest (1975) and an author with OCD in As Good as It Gets (1997), as well as for Best Su",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "title": "Jack Nicholson - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nMilitary service\nCareer\nToggle Career subsection\n1958\u20131969: Early roles and breakthrough\n1970\u20131989: Stardom and acclaim\n1990\u20131999: Established actor\n2000\u2013present: Later roles and extended break\nInfluence\nActing credits and accolades\nUnrealized Napoleon project\nPersonal life\nToggle Personal life subsection\nRelationships and children\nLegal issues\nCelebrity friendships\nHobbies\nPolitical views\nReligious beliefs\nSee also\nExplanatory notes\nReferences\nGeneral and cited bibliography\nExternal links\nJack Nicholson\n109 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nThis article is about the American actor. For the footballer, see Jack Nicholson (footballer).\nJack Nicholson\n\n\nNicholson in 2002\n\nBorn\tJohn Joseph Nicholson\nApril 22, 1937 (age\u00a088)\nNeptune City, New Jersey, U.S.\nOccupations\t\nActorfilmmaker\n\nYears\u00a0active\t1955\u20132010\nWorks\tFilmography\nSpouse\tSandra Knight\n\u200b\n\u200b(m.\u00a01962; div.\u00a01968)\u200b\nPartners\t\nAnjelica Huston (1973\u20131990)\nRebecca Broussard (1989\u20131994)\nLara Flynn Boyle (1999\u20132004)\n\nChildren\t6, including Lorraine and Ray\nAwards\tFull list\nSignature\n\n\nJohn Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.\n\nNicholson won Academy Awards for Best Actor for playing Randle McMurphy in One Flew Over the Cuckoo's Nest (1975) and an author with OCD in As Good as It Gets (1997), as well as for Best Su",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "10",
+      "action": "goto",
+      "status": "ok",
+      "details": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "resolved_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "current_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "timeout_ms": 10000
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "title": "Jack Nicholson - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nMilitary service\nCareer\nToggle Career subsection\n1958\u20131969: Early roles and breakthrough\n1970\u20131989: Stardom and acclaim\n1990\u20131999: Established actor\n2000\u2013present: Later roles and extended break\nInfluence\nActing credits and accolades\nUnrealized Napoleon project\nPersonal life\nToggle Personal life subsection\nRelationships and children\nLegal issues\nCelebrity friendships\nHobbies\nPolitical views\nReligious beliefs\nSee also\nExplanatory notes\nReferences\nGeneral and cited bibliography\nExternal links\nJack Nicholson\n109 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nThis article is about the American actor. For the footballer, see Jack Nicholson (footballer).\nJack Nicholson\n\n\nNicholson in 2002\n\nBorn\tJohn Joseph Nicholson\nApril 22, 1937 (age\u00a088)\nNeptune City, New Jersey, U.S.\nOccupations\t\nActorfilmmaker\n\nYears\u00a0active\t1955\u20132010\nWorks\tFilmography\nSpouse\tSandra Knight\n\u200b\n\u200b(m.\u00a01962; div.\u00a01968)\u200b\nPartners\t\nAnjelica Huston (1973\u20131990)\nRebecca Broussard (1989\u20131994)\nLara Flynn Boyle (1999\u20132004)\n\nChildren\t6, including Lorraine and Ray\nAwards\tFull list\nSignature\n\n\nJohn Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.\n\nNicholson won Academy Awards for Best Actor for playing Randle McMurphy in One Flew Over the Cuckoo's Nest (1975) and an author with OCD in As Good as It Gets (1997), as well as for Best Su",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "title": "Daniel Day-Lewis - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1980s\n1990s\n2000s\n2010s\n2020s\nTechnique and reputation\nPersonal life\nToggle Personal life subsection\nRelationships\nCitizenship and knighthood\nAcademic honours and activities\nPhilanthropy\nReligious views\nActing credits\nToggle Acting credits subsection\nFilm\nTelevision\nTheatre\nDocumentaries\nMusic\nAwards and nominations\nSee also\nNotes\nReferences\nExternal links\nDaniel Day-Lewis\n93 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nSir\nDaniel Day-Lewis\n\n\nDay-Lewis in 2025\n\nBorn\tDaniel Michael Blake Day-Lewis\n29 April 1957 (age\u00a068)\nLondon, England\nCitizenship\t\nUnited KingdomIreland\n\nAlma\u00a0mater\tBristol Old Vic Theatre School\nOccupation\tActor\nYears\u00a0active\t\n1971\u201319972000\u201320172024\u2013present\n\nSpouse\tRebecca Miller \u200b(m.\u00a01996)\u200b\nPartner\tIsabelle Adjani (1989\u20131995)\nChildren\t3, including Ronan\nParents\t\nCecil Day-Lewis (father)\nJill Balcon (mother)\n\nRelatives\t\nTamasin Day-Lewis (sister)\nMichael Balcon (grandfather)\n\nAwards\tFull list\n\nSir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]\n\nBorn and raised in London, Day-Lewis excelled on stage at the National Youth Theatre before being accepted at the Bristol Old Vic Theatre School, which he attended for three years. Despite his traditional training at the Bristol Old Vic,",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "11",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "summary",
+        "value": "Sir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "page_title": "Daniel Day-Lewis - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "title": "Daniel Day-Lewis - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1980s\n1990s\n2000s\n2010s\n2020s\nTechnique and reputation\nPersonal life\nToggle Personal life subsection\nRelationships\nCitizenship and knighthood\nAcademic honours and activities\nPhilanthropy\nReligious views\nActing credits\nToggle Acting credits subsection\nFilm\nTelevision\nTheatre\nDocumentaries\nMusic\nAwards and nominations\nSee also\nNotes\nReferences\nExternal links\nDaniel Day-Lewis\n93 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nSir\nDaniel Day-Lewis\n\n\nDay-Lewis in 2025\n\nBorn\tDaniel Michael Blake Day-Lewis\n29 April 1957 (age\u00a068)\nLondon, England\nCitizenship\t\nUnited KingdomIreland\n\nAlma\u00a0mater\tBristol Old Vic Theatre School\nOccupation\tActor\nYears\u00a0active\t\n1971\u201319972000\u201320172024\u2013present\n\nSpouse\tRebecca Miller \u200b(m.\u00a01996)\u200b\nPartner\tIsabelle Adjani (1989\u20131995)\nChildren\t3, including Ronan\nParents\t\nCecil Day-Lewis (father)\nJill Balcon (mother)\n\nRelatives\t\nTamasin Day-Lewis (sister)\nMichael Balcon (grandfather)\n\nAwards\tFull list\n\nSir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]\n\nBorn and raised in London, Day-Lewis excelled on stage at the National Youth Theatre before being accepted at the Bristol Old Vic Theatre School, which he attended for three years. Despite his traditional training at the Bristol Old Vic,",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "title": "Daniel Day-Lewis - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1980s\n1990s\n2000s\n2010s\n2020s\nTechnique and reputation\nPersonal life\nToggle Personal life subsection\nRelationships\nCitizenship and knighthood\nAcademic honours and activities\nPhilanthropy\nReligious views\nActing credits\nToggle Acting credits subsection\nFilm\nTelevision\nTheatre\nDocumentaries\nMusic\nAwards and nominations\nSee also\nNotes\nReferences\nExternal links\nDaniel Day-Lewis\n93 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nSir\nDaniel Day-Lewis\n\n\nDay-Lewis in 2025\n\nBorn\tDaniel Michael Blake Day-Lewis\n29 April 1957 (age\u00a068)\nLondon, England\nCitizenship\t\nUnited KingdomIreland\n\nAlma\u00a0mater\tBristol Old Vic Theatre School\nOccupation\tActor\nYears\u00a0active\t\n1971\u201319972000\u201320172024\u2013present\n\nSpouse\tRebecca Miller \u200b(m.\u00a01996)\u200b\nPartner\tIsabelle Adjani (1989\u20131995)\nChildren\t3, including Ronan\nParents\t\nCecil Day-Lewis (father)\nJill Balcon (mother)\n\nRelatives\t\nTamasin Day-Lewis (sister)\nMichael Balcon (grandfather)\n\nAwards\tFull list\n\nSir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]\n\nBorn and raised in London, Day-Lewis excelled on stage at the National Youth Theatre before being accepted at the Bristol Old Vic Theatre School, which he attended for three years. Despite his traditional training at the Bristol Old Vic,",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "12",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "section:Personal life",
+        "value": "Day-Lewis with wife Rebecca Miller at the 2008 Academy Awards",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "page_title": "Daniel Day-Lewis - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "title": "Daniel Day-Lewis - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1980s\n1990s\n2000s\n2010s\n2020s\nTechnique and reputation\nPersonal life\nToggle Personal life subsection\nRelationships\nCitizenship and knighthood\nAcademic honours and activities\nPhilanthropy\nReligious views\nActing credits\nToggle Acting credits subsection\nFilm\nTelevision\nTheatre\nDocumentaries\nMusic\nAwards and nominations\nSee also\nNotes\nReferences\nExternal links\nDaniel Day-Lewis\n93 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nSir\nDaniel Day-Lewis\n\n\nDay-Lewis in 2025\n\nBorn\tDaniel Michael Blake Day-Lewis\n29 April 1957 (age\u00a068)\nLondon, England\nCitizenship\t\nUnited KingdomIreland\n\nAlma\u00a0mater\tBristol Old Vic Theatre School\nOccupation\tActor\nYears\u00a0active\t\n1971\u201319972000\u201320172024\u2013present\n\nSpouse\tRebecca Miller \u200b(m.\u00a01996)\u200b\nPartner\tIsabelle Adjani (1989\u20131995)\nChildren\t3, including Ronan\nParents\t\nCecil Day-Lewis (father)\nJill Balcon (mother)\n\nRelatives\t\nTamasin Day-Lewis (sister)\nMichael Balcon (grandfather)\n\nAwards\tFull list\n\nSir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]\n\nBorn and raised in London, Day-Lewis excelled on stage at the National Youth Theatre before being accepted at the Bristol Old Vic Theatre School, which he attended for three years. Despite his traditional training at the Bristol Old Vic,",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "title": "Daniel Day-Lewis - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1980s\n1990s\n2000s\n2010s\n2020s\nTechnique and reputation\nPersonal life\nToggle Personal life subsection\nRelationships\nCitizenship and knighthood\nAcademic honours and activities\nPhilanthropy\nReligious views\nActing credits\nToggle Acting credits subsection\nFilm\nTelevision\nTheatre\nDocumentaries\nMusic\nAwards and nominations\nSee also\nNotes\nReferences\nExternal links\nDaniel Day-Lewis\n93 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nSir\nDaniel Day-Lewis\n\n\nDay-Lewis in 2025\n\nBorn\tDaniel Michael Blake Day-Lewis\n29 April 1957 (age\u00a068)\nLondon, England\nCitizenship\t\nUnited KingdomIreland\n\nAlma\u00a0mater\tBristol Old Vic Theatre School\nOccupation\tActor\nYears\u00a0active\t\n1971\u201319972000\u201320172024\u2013present\n\nSpouse\tRebecca Miller \u200b(m.\u00a01996)\u200b\nPartner\tIsabelle Adjani (1989\u20131995)\nChildren\t3, including Ronan\nParents\t\nCecil Day-Lewis (father)\nJill Balcon (mother)\n\nRelatives\t\nTamasin Day-Lewis (sister)\nMichael Balcon (grandfather)\n\nAwards\tFull list\n\nSir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]\n\nBorn and raised in London, Day-Lewis excelled on stage at the National Youth Theatre before being accepted at the Bristol Old Vic Theatre School, which he attended for three years. Despite his traditional training at the Bristol Old Vic,",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "13",
+      "action": "goto",
+      "status": "ok",
+      "details": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "resolved_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "current_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "timeout_ms": 10000
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "title": "Daniel Day-Lewis - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life and education\nCareer\nToggle Career subsection\n1980s\n1990s\n2000s\n2010s\n2020s\nTechnique and reputation\nPersonal life\nToggle Personal life subsection\nRelationships\nCitizenship and knighthood\nAcademic honours and activities\nPhilanthropy\nReligious views\nActing credits\nToggle Acting credits subsection\nFilm\nTelevision\nTheatre\nDocumentaries\nMusic\nAwards and nominations\nSee also\nNotes\nReferences\nExternal links\nDaniel Day-Lewis\n93 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nSir\nDaniel Day-Lewis\n\n\nDay-Lewis in 2025\n\nBorn\tDaniel Michael Blake Day-Lewis\n29 April 1957 (age\u00a068)\nLondon, England\nCitizenship\t\nUnited KingdomIreland\n\nAlma\u00a0mater\tBristol Old Vic Theatre School\nOccupation\tActor\nYears\u00a0active\t\n1971\u201319972000\u201320172024\u2013present\n\nSpouse\tRebecca Miller \u200b(m.\u00a01996)\u200b\nPartner\tIsabelle Adjani (1989\u20131995)\nChildren\t3, including Ronan\nParents\t\nCecil Day-Lewis (father)\nJill Balcon (mother)\n\nRelatives\t\nTamasin Day-Lewis (sister)\nMichael Balcon (grandfather)\n\nAwards\tFull list\n\nSir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]\n\nBorn and raised in London, Day-Lewis excelled on stage at the National Youth Theatre before being accepted at the Bristol Old Vic Theatre School, which he attended for three years. Despite his traditional training at the Bristol Old Vic,",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "title": "Ingrid Bergman - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life\nCareer\nToggle Career subsection\n1935\u20131938: Swedish years\n1939\u20131949: Hollywood and stage work breakthrough\n1950\u20131955: Italian films with Rossellini\n1956\u20131972: Hollywood return\n1973\u20131982: Later years and continued success\nPersonal life\nToggle Personal life subsection\nMarriages and children\nRelationships\nIllness and death\nActing style, public image and screen persona\nLegacy\nToggle Legacy subsection\nActivism\nCentennial celebration\nBiographical stage plays\nIn popular culture\nFilmography, theatre, television, radio, and audio\nAwards and nominations\nSee also\nNotes\nReferences\nToggle References subsection\nSources\nExternal links\nIngrid Bergman\n98 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nNot to be confused with Ingmar Bergman.\nIngrid Bergman\n\n\nBergman in 1940\n\nBorn\t29 August 1915\nStockholm, Sweden\nDied\t29 August 1982 (aged\u00a067)\nLondon, England\nResting place\tNorra Begravningsplatsen, Stockholm\nOccupation\tActress\nYears\u00a0active\t1932\u20131982\nSpouses\t\nPetter Lindstr\u00f6m\n\u200b\n\u200b(m.\u00a01937; div.\u00a01950)\u200b\nRoberto Rossellini\n\u200b\n\u200b(m.\u00a01950; div.\u00a01957)\u200b\nLars Schmidt\n\u200b\n\u200b(m.\u00a01958; div.\u00a01975)\u200b\n\nChildren\t4, including Pia Lindstr\u00f6m and Isabella Rossellini\nAwards\tFull list\nWebsite\tingridbergman.com\nSignature\n\n\nIngrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Kathar",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "14",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "summary",
+        "value": "Ingrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Katharine Hepburn has four).",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "page_title": "Ingrid Bergman - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "title": "Ingrid Bergman - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life\nCareer\nToggle Career subsection\n1935\u20131938: Swedish years\n1939\u20131949: Hollywood and stage work breakthrough\n1950\u20131955: Italian films with Rossellini\n1956\u20131972: Hollywood return\n1973\u20131982: Later years and continued success\nPersonal life\nToggle Personal life subsection\nMarriages and children\nRelationships\nIllness and death\nActing style, public image and screen persona\nLegacy\nToggle Legacy subsection\nActivism\nCentennial celebration\nBiographical stage plays\nIn popular culture\nFilmography, theatre, television, radio, and audio\nAwards and nominations\nSee also\nNotes\nReferences\nToggle References subsection\nSources\nExternal links\nIngrid Bergman\n98 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nNot to be confused with Ingmar Bergman.\nIngrid Bergman\n\n\nBergman in 1940\n\nBorn\t29 August 1915\nStockholm, Sweden\nDied\t29 August 1982 (aged\u00a067)\nLondon, England\nResting place\tNorra Begravningsplatsen, Stockholm\nOccupation\tActress\nYears\u00a0active\t1932\u20131982\nSpouses\t\nPetter Lindstr\u00f6m\n\u200b\n\u200b(m.\u00a01937; div.\u00a01950)\u200b\nRoberto Rossellini\n\u200b\n\u200b(m.\u00a01950; div.\u00a01957)\u200b\nLars Schmidt\n\u200b\n\u200b(m.\u00a01958; div.\u00a01975)\u200b\n\nChildren\t4, including Pia Lindstr\u00f6m and Isabella Rossellini\nAwards\tFull list\nWebsite\tingridbergman.com\nSignature\n\n\nIngrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Kathar",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "title": "Ingrid Bergman - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life\nCareer\nToggle Career subsection\n1935\u20131938: Swedish years\n1939\u20131949: Hollywood and stage work breakthrough\n1950\u20131955: Italian films with Rossellini\n1956\u20131972: Hollywood return\n1973\u20131982: Later years and continued success\nPersonal life\nToggle Personal life subsection\nMarriages and children\nRelationships\nIllness and death\nActing style, public image and screen persona\nLegacy\nToggle Legacy subsection\nActivism\nCentennial celebration\nBiographical stage plays\nIn popular culture\nFilmography, theatre, television, radio, and audio\nAwards and nominations\nSee also\nNotes\nReferences\nToggle References subsection\nSources\nExternal links\nIngrid Bergman\n98 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nNot to be confused with Ingmar Bergman.\nIngrid Bergman\n\n\nBergman in 1940\n\nBorn\t29 August 1915\nStockholm, Sweden\nDied\t29 August 1982 (aged\u00a067)\nLondon, England\nResting place\tNorra Begravningsplatsen, Stockholm\nOccupation\tActress\nYears\u00a0active\t1932\u20131982\nSpouses\t\nPetter Lindstr\u00f6m\n\u200b\n\u200b(m.\u00a01937; div.\u00a01950)\u200b\nRoberto Rossellini\n\u200b\n\u200b(m.\u00a01950; div.\u00a01957)\u200b\nLars Schmidt\n\u200b\n\u200b(m.\u00a01958; div.\u00a01975)\u200b\n\nChildren\t4, including Pia Lindstr\u00f6m and Isabella Rossellini\nAwards\tFull list\nWebsite\tingridbergman.com\nSignature\n\n\nIngrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Kathar",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    },
+    {
+      "step_id": "15",
+      "action": "extract",
+      "status": "ok",
+      "details": {
+        "target": "section:Personal life",
+        "value": "Ingrid Bergman and first husband Petter Lindstr\u00f6m in the 1940s",
+        "timeout_ms": 8000,
+        "current_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "page_title": "Ingrid Bergman - Wikipedia"
+      },
+      "error": null,
+      "error_code": null,
+      "pre_observation": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "title": "Ingrid Bergman - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life\nCareer\nToggle Career subsection\n1935\u20131938: Swedish years\n1939\u20131949: Hollywood and stage work breakthrough\n1950\u20131955: Italian films with Rossellini\n1956\u20131972: Hollywood return\n1973\u20131982: Later years and continued success\nPersonal life\nToggle Personal life subsection\nMarriages and children\nRelationships\nIllness and death\nActing style, public image and screen persona\nLegacy\nToggle Legacy subsection\nActivism\nCentennial celebration\nBiographical stage plays\nIn popular culture\nFilmography, theatre, television, radio, and audio\nAwards and nominations\nSee also\nNotes\nReferences\nToggle References subsection\nSources\nExternal links\nIngrid Bergman\n98 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nNot to be confused with Ingmar Bergman.\nIngrid Bergman\n\n\nBergman in 1940\n\nBorn\t29 August 1915\nStockholm, Sweden\nDied\t29 August 1982 (aged\u00a067)\nLondon, England\nResting place\tNorra Begravningsplatsen, Stockholm\nOccupation\tActress\nYears\u00a0active\t1932\u20131982\nSpouses\t\nPetter Lindstr\u00f6m\n\u200b\n\u200b(m.\u00a01937; div.\u00a01950)\u200b\nRoberto Rossellini\n\u200b\n\u200b(m.\u00a01950; div.\u00a01957)\u200b\nLars Schmidt\n\u200b\n\u200b(m.\u00a01958; div.\u00a01975)\u200b\n\nChildren\t4, including Pia Lindstr\u00f6m and Isabella Rossellini\nAwards\tFull list\nWebsite\tingridbergman.com\nSignature\n\n\nIngrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Kathar",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      },
+      "post_observation": {
+        "url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "title": "Ingrid Bergman - Wikipedia",
+        "visible_text": "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nEarly life\nCareer\nToggle Career subsection\n1935\u20131938: Swedish years\n1939\u20131949: Hollywood and stage work breakthrough\n1950\u20131955: Italian films with Rossellini\n1956\u20131972: Hollywood return\n1973\u20131982: Later years and continued success\nPersonal life\nToggle Personal life subsection\nMarriages and children\nRelationships\nIllness and death\nActing style, public image and screen persona\nLegacy\nToggle Legacy subsection\nActivism\nCentennial celebration\nBiographical stage plays\nIn popular culture\nFilmography, theatre, television, radio, and audio\nAwards and nominations\nSee also\nNotes\nReferences\nToggle References subsection\nSources\nExternal links\nIngrid Bergman\n98 languages\nArticle\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nBirthday mode (Baby Globe)\nDisabled\nEnabled\nLearn more about Birthday mode\nText\nSmall\nStandard\nLarge\nWidth\nStandard\nWide\nColor (beta)\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\nNot to be confused with Ingmar Bergman.\nIngrid Bergman\n\n\nBergman in 1940\n\nBorn\t29 August 1915\nStockholm, Sweden\nDied\t29 August 1982 (aged\u00a067)\nLondon, England\nResting place\tNorra Begravningsplatsen, Stockholm\nOccupation\tActress\nYears\u00a0active\t1932\u20131982\nSpouses\t\nPetter Lindstr\u00f6m\n\u200b\n\u200b(m.\u00a01937; div.\u00a01950)\u200b\nRoberto Rossellini\n\u200b\n\u200b(m.\u00a01950; div.\u00a01957)\u200b\nLars Schmidt\n\u200b\n\u200b(m.\u00a01958; div.\u00a01975)\u200b\n\nChildren\t4, including Pia Lindstr\u00f6m and Isabella Rossellini\nAwards\tFull list\nWebsite\tingridbergman.com\nSignature\n\n\nIngrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Kathar",
+        "dom_summary": [
+          "a:Jump to content",
+          "button:",
+          "button:hide",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:",
+          "a:Search",
+          "form:Search",
+          "button:Search",
+          "a:Donate"
+        ],
+        "form_state": [],
+        "screenshot_path": null
+      }
+    }
+  ],
+  "verification": {
+    "success": true,
+    "reason": "All verification rules passed.",
+    "completed_at": "2026-03-30T15:34:10.832727+00:00",
+    "checks": [
+      {
+        "kind": "artifact_exists",
+        "label": "comparison artifact",
+        "value": "comparison",
+        "passed": true,
+        "evidence": "comparison"
+      },
+      {
+        "kind": "artifact_list_min_length",
+        "label": "comparison rows",
+        "value": "{'path': 'comparison.rows', 'min': 5}",
+        "passed": true,
+        "evidence": "len=5"
+      }
+    ]
+  },
+  "artifacts": {
+    "extracts": {
+      "summary": "Ingrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Katharine Hepburn has four).",
+      "section:Personal life": "Ingrid Bergman and first husband Petter Lindstr\u00f6m in the 1940s"
+    },
+    "extract_sequence": [
+      {
+        "step_id": "2",
+        "target": "summary",
+        "value": "Katharine Houghton Hepburn (May 12, 1907 \u2013 June 29, 2003) was an American actress whose career as a leading lady on stage and screen spanned six decades. Known for her headstrong independence, spirited personality, and outspokenness, she cultivated a screen persona that matched this public image, and regularly played strong-willed, sophisticated women. She worked in a varied range of genres, from screwball comedy to literary drama, which earned her various accolades, including a record four Academy Awards for Best Actress, as well as two British Academy Film Awards and a Primetime Emmy Award, in addition to nominations for two Tony Awards, two Grammy Awards and eight Golden Globes.",
+        "current_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "page_title": "Katharine Hepburn - Wikipedia"
+      },
+      {
+        "step_id": "3",
+        "target": "section:Personal life",
+        "value": "",
+        "current_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+        "page_title": "Katharine Hepburn - Wikipedia"
+      },
+      {
+        "step_id": "5",
+        "target": "summary",
+        "value": "Mary Louise \"Meryl\" Streep (born June 22, 1949) is an American actress. Recognized as one of the most versatile performers of her era, Streep is noted for her technical precision, command of dialects, and professional longevity.[1] She is an alumna of Vassar College and the Yale School of Drama, holding a Bachelor of Arts and a Master of Fine Arts.[2] Her artistic process often includes refining her characters' dialogue so that their motivations possess a psychological depth and agency that transcend traditional archetypes.[3] Beyond her creative work, she is a prominent advocate for gender parity, labor protections, and a challenge to the influence of the male gaze in film criticism and production.[4]",
+        "current_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "page_title": "Meryl Streep - Wikipedia"
+      },
+      {
+        "step_id": "6",
+        "target": "section:Personal life",
+        "value": "",
+        "current_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+        "page_title": "Meryl Streep - Wikipedia"
+      },
+      {
+        "step_id": "8",
+        "target": "summary",
+        "value": "John Joseph Nicholson (born April 22, 1937) is an American retired actor and filmmaker.[1][2] Nicholson is widely regarded as one of the greatest actors of the 20th century, often playing charismatic rebels fighting against the social structure.[3][4][5] Over his five-decade-long career, he received numerous accolades, including three Academy Awards, three British Academy Film Awards, six Golden Globe Awards, and a Grammy Award.",
+        "current_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "page_title": "Jack Nicholson - Wikipedia"
+      },
+      {
+        "step_id": "9",
+        "target": "section:Personal life",
+        "value": "show Nicholson's children",
+        "current_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+        "page_title": "Jack Nicholson - Wikipedia"
+      },
+      {
+        "step_id": "11",
+        "target": "summary",
+        "value": "Sir Daniel Michael Blake Day-Lewis (born 29 April 1957) is an English actor.[1][2] Often described as one of the greatest actors in the history of cinema, he is best known for intense method acting portrayed with eccentric characters in auteurs' films. He is the recipient of numerous accolades, including a record three Academy Awards for Best Actor, as well as four BAFTAs, three Actor Awards and two Golden Globes. In 2014, Day-Lewis received a knighthood for services to drama.[3]",
+        "current_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "page_title": "Daniel Day-Lewis - Wikipedia"
+      },
+      {
+        "step_id": "12",
+        "target": "section:Personal life",
+        "value": "Day-Lewis with wife Rebecca Miller at the 2008 Academy Awards",
+        "current_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+        "page_title": "Daniel Day-Lewis - Wikipedia"
+      },
+      {
+        "step_id": "14",
+        "target": "summary",
+        "value": "Ingrid Bergman[a] (29 August 1915\u00a0\u2013 29 August 1982) was a Swedish actress.[1] With a career spanning five decades,[2] Bergman is often regarded as one of the most influential actresses in the history of cinema.[3] She won numerous accolades, including three Academy Awards, two Primetime Emmy Awards, and a Tony Award; these accolades made her the youngest performer to achieve the Triple Crown of Acting and one of only four actresses to have received at least three acting Academy Awards (only Katharine Hepburn has four).",
+        "current_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "page_title": "Ingrid Bergman - Wikipedia"
+      },
+      {
+        "step_id": "15",
+        "target": "section:Personal life",
+        "value": "Ingrid Bergman and first husband Petter Lindstr\u00f6m in the 1940s",
+        "current_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+        "page_title": "Ingrid Bergman - Wikipedia"
+      }
+    ],
+    "isLLMReProcessingRequired": true,
+    "comparison": {
+      "query": "Compare the top 5 Actors/Actresses with the most Oscars by Name,Age,Notable Films, Personal Life, Net Worth",
+      "subject": "the top 5 Actors/Actresses with the most Oscars",
+      "output_mode": "text",
+      "isLLMReProcessingRequired": true,
+      "task_id": "wikipedia-comparison",
+      "article_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+      "columns": [
+        "Name",
+        "Age",
+        "Notable Films",
+        "Personal Life",
+        "Net Worth"
+      ],
+      "raw_rows": [
+        {
+          "entity_name": "Katharine Hepburn",
+          "article_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn"
+        },
+        {
+          "entity_name": "Meryl Streep",
+          "article_url": "https://en.wikipedia.org/wiki/Meryl_Streep"
+        },
+        {
+          "entity_name": "Jack Nicholson",
+          "article_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+          "Personal Life": "show Nicholson's children"
+        },
+        {
+          "entity_name": "Daniel Day-Lewis",
+          "article_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+          "Personal Life": "Day-Lewis with wife Rebecca Miller at the 2008 Academy Awards"
+        },
+        {
+          "entity_name": "Ingrid Bergman",
+          "article_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+          "Personal Life": "Ingrid Bergman and first husband Petter Lindstr\u00f6m in the 1940s"
+        }
+      ],
+      "rows": [
+        {
+          "entity_name": "Katharine Hepburn",
+          "article_url": "https://en.wikipedia.org/wiki/Katharine_Hepburn",
+          "Name": "Katharine Hepburn",
+          "Age": "Died age 96 (1907\u20132003)",
+          "Notable Films": "The Philadelphia Story, Guess Who's Coming to Dinner, The African Queen, On Golden Pond",
+          "Personal Life": "Married briefly to Ludlow Ogden Smith; long relationship with Spencer Tracy",
+          "Net Worth": "Estimated ~$10 million at time of death"
+        },
+        {
+          "entity_name": "Meryl Streep",
+          "article_url": "https://en.wikipedia.org/wiki/Meryl_Streep",
+          "Name": "Meryl Streep",
+          "Age": "75 (born June 22, 1949)",
+          "Notable Films": "Kramer vs. Kramer, Sophie's Choice, The Iron Lady, The Devil Wears Prada",
+          "Personal Life": "Married sculptor Don Gummer since 1978; four children",
+          "Net Worth": "Estimated ~$160 million"
+        },
+        {
+          "entity_name": "Jack Nicholson",
+          "article_url": "https://en.wikipedia.org/wiki/Jack_Nicholson",
+          "Name": "Jack Nicholson",
+          "Age": "87 (born April 22, 1937)",
+          "Notable Films": "One Flew Over the Cuckoo's Nest, As Good as It Gets, Terms of Endearment",
+          "Personal Life": "Never married; has five children with four different women including Jennifer Nicholson and Lorraine Nicholson",
+          "Net Worth": "Estimated ~$400 million"
+        },
+        {
+          "entity_name": "Daniel Day-Lewis",
+          "article_url": "https://en.wikipedia.org/wiki/Daniel_Day-Lewis",
+          "Name": "Daniel Day-Lewis",
+          "Age": "67 (born April 29, 1957)",
+          "Notable Films": "My Left Foot, There Will Be Blood, Lincoln, Gangs of New York",
+          "Personal Life": "Married filmmaker Rebecca Miller since 1996; pictured together at 2008 Academy Awards",
+          "Net Worth": "Estimated ~$50 million"
+        },
+        {
+          "entity_name": "Ingrid Bergman",
+          "article_url": "https://en.wikipedia.org/wiki/Ingrid_Bergman",
+          "Name": "Ingrid Bergman",
+          "Age": "Died age 67 (1915\u20131982)",
+          "Notable Films": "Casablanca, Gaslight, Notorious, Anastasia, Murder on the Orient Express",
+          "Personal Life": "Married three times; first husband Petter Lindstr\u00f6m (1940s), then Roberto Rossellini, then Lars Schmidt",
+          "Net Worth": "Estimated ~$20 million at time of death"
+        }
+      ],
+      "entity_count": 5,
+      "metadata": {
+        "planner_mode": "llm",
+        "model": "claude-sonnet-4-6",
+        "llm_reprocessing_applied": true,
+        "llm_reprocessing_provider": "anthropic",
+        "llm_reprocessing_model": "claude-sonnet-4-6",
+        "llm_reprocessing_error": null
+      }
+    }
+  }
+}

@@ -590,13 +590,13 @@ def _is_llm_reprocessing_required(
     goal: str,
     plan_metadata: dict[str, Any],
 ) -> bool:
-    if task_id == "wikipedia-comparison":
-        return True
-    if parse_comparison_intent(goal) is not None:
-        return True
     metadata_flag = plan_metadata.get("isLLMReProcessingRequired")
     if isinstance(metadata_flag, bool):
         return metadata_flag
+    if task_id == "wikipedia-comparison":
+        return True
+    if parse_comparison_intent(goal) is not None and plan_metadata.get("mode") == "llm":
+        return True
     return False
 
 
@@ -672,7 +672,11 @@ def _build_comparison_artifact(
         "query": goal,
         "subject": comparison_intent.subject,
         "output_mode": comparison_intent.output_mode,
-        "isLLMReProcessingRequired": True,
+        "isLLMReProcessingRequired": _is_llm_reprocessing_required(
+            task_id=task_id,
+            goal=goal,
+            plan_metadata=plan_metadata,
+        ),
         "task_id": task_id,
         "article_url": getattr(observation, "url", ""),
         "columns": columns,
@@ -693,7 +697,7 @@ def _effective_verification_rules(
     plan_metadata: dict[str, Any],
     artifacts: dict[str, object],
 ) -> list:
-    if task_id != "wikipedia-comparison":
+    if not task_id or not task_id.endswith("comparison"):
         return list(plan_rules)
 
     comparison = artifacts.get("comparison")
@@ -773,6 +777,12 @@ def _build_comparison_rows(
             row[target.removeprefix("section:")] = value
         elif target == "section_headings" and isinstance(value, list) and value:
             row["section_headings"] = value
+        elif target == "bestbuy_price" and isinstance(value, str) and value.strip():
+            row["price"] = value
+        elif target == "bestbuy_product_facts" and isinstance(value, dict) and value:
+            _merge_bestbuy_product_facts(row, value)
+        elif target == "bestbuy_search_results" and isinstance(value, list) and value:
+            row["search_results"] = value
 
     normalized_requested = {_normalize_column_name(column): column for column in requested_columns}
     rows: list[dict[str, object]] = []
@@ -796,7 +806,7 @@ def _build_comparison_rows(
 
 
 def _entity_name_from_page_title(page_title: str, url: str) -> str:
-    cleaned = page_title.replace(" - Wikipedia", "").strip()
+    cleaned = page_title.replace(" - Wikipedia", "").replace(" - Best Buy", "").strip()
     if cleaned:
         return cleaned
     return url.rstrip("/").rsplit("/", 1)[-1].replace("_", " ")
@@ -807,11 +817,14 @@ def _normalize_column_name(value: str) -> str:
 
 
 def _match_requested_column(raw_row: dict[str, object], normalized_column: str) -> object | None:
+    aliases = _comparison_column_aliases(normalized_column)
     for key, value in raw_row.items():
         normalized_key = _normalize_column_name(str(key))
         if normalized_key == normalized_column:
             return value
         if normalized_key.startswith(normalized_column) or normalized_column.startswith(normalized_key):
+            return value
+        if normalized_key in aliases:
             return value
     return None
 
@@ -832,6 +845,56 @@ def _infer_comparison_columns_from_rows(rows: list[dict[str, object]]) -> list[s
 def _slugify_comparison_subject(subject: str) -> str:
     normalized = re.sub(r"[^a-z0-9]+", "_", subject.lower()).strip("_")
     return normalized or "comparison"
+
+
+def _merge_bestbuy_product_facts(row: dict[str, object], value: dict[str, object]) -> None:
+    entity_name = value.get("entity_name") or value.get("product_name")
+    if isinstance(entity_name, str) and entity_name.strip():
+        row["entity_name"] = entity_name
+        row["model name"] = entity_name
+    product_url = value.get("product_url")
+    if isinstance(product_url, str) and product_url.strip():
+        row["article_url"] = product_url
+    sku = value.get("sku")
+    if isinstance(sku, str) and sku.strip():
+        row["sku"] = sku
+    price = value.get("price")
+    if isinstance(price, str) and price.strip():
+        row["price"] = price
+    facts = value.get("facts")
+    if isinstance(facts, dict):
+        for key, fact_value in facts.items():
+            if isinstance(key, str) and fact_value not in (None, ""):
+                row[key] = fact_value
+    specifications = value.get("specifications")
+    if isinstance(specifications, dict):
+        for key, spec_value in specifications.items():
+            if not isinstance(key, str) or spec_value in (None, ""):
+                continue
+            normalized_key = _normalize_column_name(key)
+            if normalized_key.startswith("screen size"):
+                row.setdefault("display size", spec_value)
+            elif normalized_key.startswith("display size"):
+                row.setdefault("display size", spec_value)
+            elif normalized_key.startswith("system memory") or normalized_key == "ram":
+                row.setdefault("ram", spec_value)
+            elif "storage" in normalized_key or "ssd" in normalized_key:
+                row.setdefault("storage", spec_value)
+
+
+def _comparison_column_aliases(normalized_column: str) -> set[str]:
+    aliases = {normalized_column}
+    alias_map = {
+        "price": {"current price"},
+        "display size": {"screen size"},
+        "screen size": {"display size"},
+        "ram": {"memory", "system memory"},
+        "memory": {"ram", "system memory"},
+        "storage": {"storage type", "storage capacity", "solid state drive capacity", "ssd capacity"},
+        "model name": {"entity name", "product name"},
+    }
+    aliases.update(alias_map.get(normalized_column, set()))
+    return aliases
 
 
 def _print_run_report(goal: str, outcome: RunOutcome, artifacts_mode: str = "summary") -> None:

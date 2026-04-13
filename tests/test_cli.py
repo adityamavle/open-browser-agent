@@ -668,6 +668,92 @@ def test_build_comparison_artifact_uses_extract_sequence() -> None:
     assert artifact["rows"][0]["habitat"] == "Andean mountains and open grasslands."
 
 
+def test_build_comparison_artifact_supports_bestbuy_product_facts() -> None:
+    observation = SimpleNamespace(
+        url="file:///bestbuy_surface_laptop_13.html",
+        title="Microsoft Surface Laptop 13-inch - Best Buy",
+    )
+    artifact = cli._build_comparison_artifact(
+        task_id="bestbuy-laptop-comparison",
+        goal="Compare Best Buy laptops by price, display size, RAM, and storage and export to csv",
+        observation=observation,
+        extract_sequence=[
+            {
+                "step_id": "macbook-facts",
+                "target": "bestbuy_product_facts",
+                "value": {
+                    "entity_name": "Apple MacBook Air 13-inch Laptop - M4 chip - 16GB Memory - 512GB SSD",
+                    "product_name": "Apple MacBook Air 13-inch Laptop - M4 chip - 16GB Memory - 512GB SSD",
+                    "product_url": "file:///bestbuy_macbook_air_13.html",
+                    "sku": "6530001",
+                    "price": "$1,099.00",
+                    "facts": {
+                        "model name": "Apple MacBook Air 13-inch Laptop - M4 chip - 16GB Memory - 512GB SSD",
+                        "display size": "13.6 inches",
+                        "ram": "16 gigabytes",
+                        "storage": "512 gigabytes",
+                    },
+                    "specifications": {
+                        "Screen Size": "13.6 inches",
+                        "System Memory (RAM)": "16 gigabytes",
+                        "Solid State Drive Capacity": "512 gigabytes",
+                    },
+                },
+                "current_url": "file:///bestbuy_macbook_air_13.html",
+                "page_title": "Apple MacBook Air 13-inch Laptop - Best Buy",
+            },
+            {
+                "step_id": "macbook-price",
+                "target": "bestbuy_price",
+                "value": "$1,099.00",
+                "current_url": "file:///bestbuy_macbook_air_13.html",
+                "page_title": "Apple MacBook Air 13-inch Laptop - Best Buy",
+            },
+            {
+                "step_id": "surface-facts",
+                "target": "bestbuy_product_facts",
+                "value": {
+                    "entity_name": "Microsoft Surface Laptop 13-inch - Snapdragon X Plus - 16GB Memory - 512GB SSD",
+                    "product_name": "Microsoft Surface Laptop 13-inch - Snapdragon X Plus - 16GB Memory - 512GB SSD",
+                    "product_url": "file:///bestbuy_surface_laptop_13.html",
+                    "sku": "6540002",
+                    "price": "$999.00",
+                    "facts": {
+                        "model name": "Microsoft Surface Laptop 13-inch - Snapdragon X Plus - 16GB Memory - 512GB SSD",
+                        "display size": "13 inches",
+                        "ram": "16 gigabytes",
+                        "storage": "512 gigabytes",
+                    },
+                    "specifications": {
+                        "Display Size": "13 inches",
+                        "System Memory (RAM)": "16 gigabytes",
+                        "Solid State Drive Capacity": "512 gigabytes",
+                    },
+                },
+                "current_url": "file:///bestbuy_surface_laptop_13.html",
+                "page_title": "Microsoft Surface Laptop 13-inch - Best Buy",
+            },
+            {
+                "step_id": "surface-price",
+                "target": "bestbuy_price",
+                "value": "$999.00",
+                "current_url": "file:///bestbuy_surface_laptop_13.html",
+                "page_title": "Microsoft Surface Laptop 13-inch - Best Buy",
+            },
+        ],
+        plan_metadata={"mode": "task_lookup"},
+    )
+
+    assert artifact is not None
+    assert artifact["output_mode"] == "csv"
+    assert artifact["isLLMReProcessingRequired"] is False
+    assert artifact["columns"] == ["price", "display size", "RAM", "storage"]
+    assert artifact["rows"][0]["entity_name"].startswith("Apple MacBook Air")
+    assert artifact["rows"][0]["price"] == "$1,099.00"
+    assert artifact["rows"][0]["display size"] == "13.6 inches"
+    assert artifact["rows"][1]["RAM"] == "16 gigabytes"
+
+
 def test_build_run_artifacts_writes_csv_for_comparison_output(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)
     observation = SimpleNamespace(url="https://en.wikipedia.org/wiki/Andean_condor", title="Andean condor - Wikipedia")
@@ -771,6 +857,28 @@ def test_effective_verification_rules_for_wikipedia_comparison_use_artifacts() -
     ]
     assert rules[1].value == {"path": "comparison.rows", "min": 3}
     assert rules[2].value == "comparison.csv_path"
+
+
+def test_effective_verification_rules_for_bestbuy_comparison_use_artifacts() -> None:
+    rules = cli._effective_verification_rules(
+        task_id="bestbuy-laptop-comparison",
+        plan_rules=[],
+        plan_metadata={},
+        artifacts={
+            "comparison": {
+                "output_mode": "csv",
+                "rows": [{}, {}],
+                "csv_path": "C:/tmp/bestbuy.csv",
+            }
+        },
+    )
+
+    assert [rule.kind for rule in rules] == [
+        "artifact_exists",
+        "artifact_list_min_length",
+        "artifact_exists",
+    ]
+    assert rules[1].value == {"path": "comparison.rows", "min": 2}
 
 
 def test_is_llm_reprocessing_required_is_true_for_comparison_goal() -> None:

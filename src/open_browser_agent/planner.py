@@ -16,6 +16,7 @@ from open_browser_agent.constants.agent_constants import (
     ANTHROPIC_DEFAULT_VERSION,
     ANTHROPIC_PLANNER_SYSTEM_PROMPT,
     ANTHROPIC_PLANNER_USER_PROMPT_LINES,
+    BESTBUY_COMPARISON_PLANNER_HINTS,
     REQUIRED_STEP_ARGS,
     SUPPORTED_VERIFICATION_KINDS,
     WIKIPEDIA_COMPARISON_PLANNER_HINTS,
@@ -25,6 +26,11 @@ from open_browser_agent.comparison import parse_comparison_intent
 from open_browser_agent.schemas.step import Step
 from open_browser_agent.tasks.registry import find_task_by_goal
 from open_browser_agent.verifier import VerificationRule
+
+
+def _is_bestbuy_goal(goal: str, task_id: str | None) -> bool:
+    lowered = goal.strip().lower()
+    return task_id == "bestbuy-laptop-comparison" or "best buy" in lowered or "bestbuy" in lowered
 
 
 @dataclass(slots=True)
@@ -253,13 +259,18 @@ class AnthropicPlannerProvider:
             )
             lines.extend(self._task_specific_hints(task.task_id))
         if comparison_intent is not None:
+            comparison_hints = (
+                BESTBUY_COMPARISON_PLANNER_HINTS
+                if _is_bestbuy_goal(request.goal, getattr(task, "task_id", None))
+                else WIKIPEDIA_COMPARISON_PLANNER_HINTS
+            )
             lines.extend(
                 [
                     "Comparison intent detected.",
                     f"Comparison subject: {comparison_intent.subject}",
                     f"Requested output mode: {comparison_intent.output_mode}",
                     f"Requested columns (bounded): {json.dumps(comparison_intent.requested_columns, ensure_ascii=True)}",
-                    *WIKIPEDIA_COMPARISON_PLANNER_HINTS,
+                    *comparison_hints,
                 ]
             )
         if request.observation_summary:
@@ -391,7 +402,12 @@ class Planner:
         steps = [self._coerce_step(step) for step in provider_plan.steps]
         steps = self._normalize_goal_specific_steps(goal=goal, steps=steps)
         metadata = dict(provider_plan.metadata)
-        self._validate_goal_specific_constraints(goal=goal, steps=steps, metadata=metadata)
+        self._validate_goal_specific_constraints(
+            goal=goal,
+            steps=steps,
+            metadata=metadata,
+            task_id=provider_plan.task_id,
+        )
         return PlanResult(
             steps=steps,
             provider_name=self.provider.name,
@@ -463,9 +479,28 @@ class Planner:
         goal: str,
         steps: list[Step],
         metadata: dict[str, Any],
+        task_id: str | None,
     ) -> None:
         comparison_intent = parse_comparison_intent(goal)
         if comparison_intent is None:
+            return
+
+        if self._is_bestbuy_comparison_task(goal=goal, task_id=task_id, steps=steps):
+            product_extracts = [
+                str(step.args.get("target") or "")
+                for step in steps
+                if step.type == "extract" and str(step.args.get("target") or "") == "bestbuy_product_facts"
+            ]
+            if len(product_extracts) < 2:
+                raise PlannerError("Best Buy comparison plans must extract bestbuy_product_facts from at least 2 product pages.")
+            disallowed_extracts = [
+                str(step.args.get("target") or "")
+                for step in steps
+                if step.type == "extract"
+                and str(step.args.get("target") or "") not in {"bestbuy_search_results", "bestbuy_product_facts", "bestbuy_price"}
+            ]
+            if disallowed_extracts:
+                raise PlannerError("Best Buy comparison plans may only use extract targets bestbuy_search_results, bestbuy_product_facts, and bestbuy_price.")
             return
 
         wiki_urls = [
@@ -504,6 +539,8 @@ class Planner:
     def _normalize_goal_specific_steps(self, goal: str, steps: list[Step]) -> list[Step]:
         comparison_intent = parse_comparison_intent(goal)
         if comparison_intent is None:
+            return steps
+        if _is_bestbuy_goal(goal, None):
             return steps
         if any(
             step.type == "extract"
@@ -555,3 +592,11 @@ class Planner:
             if len(targets) >= 2:
                 break
         return targets
+
+    def _is_bestbuy_comparison_task(self, goal: str, task_id: str | None, steps: list[Step]) -> bool:
+        if _is_bestbuy_goal(goal, task_id):
+            return True
+        return any(
+            step.type == "extract" and str(step.args.get("target") or "").startswith("bestbuy_")
+            for step in steps
+        )
