@@ -18,7 +18,7 @@ Use it when you want:
 
 - a CUA kernel that is easy to inspect and extend
 - structured browser actions instead of ad hoc automation scripts
-- task-specific verification rules (eg; explicit success checks for each workflow)
+- task-specific verification rules, for example explicit success checks for each workflow
 - replayable traces for debugging
 - CSV and artifact output from browser workflows
 - a CLI that can run, plan, replay, and repeatedly test tasks
@@ -297,14 +297,14 @@ The codebase is split into a few small modules:
 Run tests:
 
 ```bash
-conda activate cua_env
+source .venv/bin/activate
 pytest
 ```
 
 Run coverage:
 
 ```bash
-conda activate cua_env
+source .venv/bin/activate
 pytest --cov=src/open_browser_agent
 ```
 

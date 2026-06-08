@@ -50,7 +50,7 @@ class RunOutcome:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="oba",
-        description="A small browser-use agent with tracing and replay.",
+        description="A lightweight browser agent kernel for traceable web task execution.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
