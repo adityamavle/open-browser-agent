@@ -1,5 +1,4 @@
 # Runtime dependency for the browser backend.
-# Pin the current official release so browser binaries and behavior stay reproducible.
 playwright==1.58.0
 
 # Minimal test dependency for the current scaffold.

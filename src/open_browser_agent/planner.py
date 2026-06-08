@@ -190,12 +190,15 @@ class AnthropicPlannerProvider:
         )
 
     def plan(self, request: PlanRequest) -> ProviderPlan:
-        response = self.transport.post_json(
-            url=self.base_url,
-            headers=self._headers(),
-            payload=self._payload(request),
-            timeout_s=self.timeout_s,
-        )
+        try:
+            response = self.transport.post_json(
+                url=self.base_url,
+                headers=self._headers(),
+                payload=self._payload(request),
+                timeout_s=self.timeout_s,
+            )
+        except Exception as exc:
+            raise PlannerError(f"Anthropic planner request failed: {exc}") from exc
         content = self._extract_message_content(response)
         raw_plan = self._parse_plan_json(content, response=response)
         steps = raw_plan.get("steps")
@@ -357,24 +360,47 @@ class AnthropicPlannerProvider:
         if raw_rules is None:
             return []
         if not isinstance(raw_rules, list):
-            raise PlannerError("LLM planner verification_rules must be a list.")
+            return []
         rules: list[VerificationRule] = []
         for raw_rule in raw_rules:
             if not isinstance(raw_rule, dict):
-                raise PlannerError("LLM planner verification rule must be an object.")
+                continue
             if "kind" not in raw_rule or "value" not in raw_rule:
-                raise PlannerError("LLM planner verification rule requires 'kind' and 'value'.")
+                continue
             kind = str(raw_rule["kind"])
             if kind not in SUPPORTED_VERIFICATION_KINDS:
-                raise PlannerError(f"LLM planner emitted unsupported verification kind: {kind}")
+                continue
+            try:
+                value = self._coerce_verification_rule_value(kind, raw_rule["value"])
+            except (PlannerError, TypeError, ValueError):
+                continue
             rules.append(
                 VerificationRule(
                     kind=kind,
-                    value=raw_rule["value"],
+                    value=value,
                     label=str(raw_rule.get("label") or ""),
                 )
             )
         return rules
+
+    def _coerce_verification_rule_value(self, kind: str, value: Any) -> Any:
+        if kind in {"url_contains", "text_contains", "dom_contains", "artifact_exists"}:
+            if isinstance(value, (dict, list)):
+                raise PlannerError(f"LLM planner verification rule {kind!r} requires a string value.")
+            return str(value)
+        if kind == "artifact_text_contains":
+            if not isinstance(value, dict) or not value.get("path") or "contains" not in value:
+                raise PlannerError("LLM planner verification rule 'artifact_text_contains' requires value {'path': ..., 'contains': ...}.")
+            return {"path": str(value["path"]), "contains": str(value["contains"])}
+        if kind == "artifact_text_min_length":
+            if not isinstance(value, dict) or not value.get("path") or "min_chars" not in value:
+                raise PlannerError("LLM planner verification rule 'artifact_text_min_length' requires value {'path': ..., 'min_chars': ...}.")
+            return {"path": str(value["path"]), "min_chars": int(value["min_chars"])}
+        if kind == "artifact_list_min_length":
+            if not isinstance(value, dict) or not value.get("path") or "min" not in value:
+                raise PlannerError("LLM planner verification rule 'artifact_list_min_length' requires value {'path': ..., 'min': ...}.")
+            return {"path": str(value["path"]), "min": int(value["min"])}
+        raise PlannerError(f"LLM planner emitted unsupported verification kind: {kind}")
 
 
 def build_planner(provider_name: str = "task-registry") -> "Planner":
@@ -402,18 +428,24 @@ class Planner:
         steps = [self._coerce_step(step) for step in provider_plan.steps]
         steps = self._normalize_goal_specific_steps(goal=goal, steps=steps)
         metadata = dict(provider_plan.metadata)
+        bundled_task = find_task_by_goal(goal)
+        task_id = provider_plan.task_id
+        verification_rules = list(provider_plan.verification_rules)
+        if bundled_task is not None:
+            task_id = bundled_task.task_id
+            verification_rules = list(bundled_task.verification_rules)
         self._validate_goal_specific_constraints(
             goal=goal,
             steps=steps,
             metadata=metadata,
-            task_id=provider_plan.task_id,
+            task_id=task_id,
         )
         return PlanResult(
             steps=steps,
             provider_name=self.provider.name,
-            task_id=provider_plan.task_id,
+            task_id=task_id,
             verifier_hint=provider_plan.verifier_hint,
-            verification_rules=list(provider_plan.verification_rules),
+            verification_rules=verification_rules,
             metadata=metadata,
         )
 
@@ -486,6 +518,8 @@ class Planner:
             return
 
         if self._is_bestbuy_comparison_task(goal=goal, task_id=task_id, steps=steps):
+            if task_id == "bestbuy-live-comparison":
+                return
             product_extracts = [
                 str(step.args.get("target") or "")
                 for step in steps

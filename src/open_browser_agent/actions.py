@@ -65,7 +65,13 @@ class ActionAPI:
         page = self._page()
         resolved_url = self._url_resolver(url)
         try:
-            self._with_timeout(page.goto, timeout_ms, resolved_url)
+            try:
+                if timeout_ms is None:
+                    page.goto(resolved_url, wait_until="domcontentloaded")
+                else:
+                    page.goto(resolved_url, timeout=timeout_ms, wait_until="domcontentloaded")
+            except TypeError:
+                self._with_timeout(page.goto, timeout_ms, resolved_url)
             return ActionResult(
                 ok=True,
                 action="goto",
@@ -377,7 +383,7 @@ class ActionAPI:
                         return '';
                       };
                       const hrefFor = (node) => {
-                        const link = node.querySelector('a[href]');
+                        const link = node.matches && node.matches('a[href]') ? node : node.querySelector('a[href]');
                         if (!link) {
                           return '';
                         }
@@ -385,18 +391,43 @@ class ActionAPI:
                         if (!href) {
                           return '';
                         }
-                        return href.startsWith('http') ? href : `https://www.bestbuy.com${href}`;
+                        if (href.startsWith('http')) {
+                          return href;
+                        }
+                        const base =
+                          window.location.protocol === 'http:' || window.location.protocol === 'https:'
+                            ? window.location.origin
+                            : window.location.href;
+                        return new URL(href, base).href;
                       };
                       const cards = Array.from(
                         document.querySelectorAll('[data-testid="sku-card"], .sku-item, li.sku-item')
                       );
-                      return cards
-                        .map((node) => ({
-                          title: titleText(node),
-                          href: hrefFor(node),
-                          price: priceText(node),
-                        }))
-                        .filter((item) => item.title && item.href)
+                      const productAnchors = Array.from(
+                        document.querySelectorAll('a.sku-title[href], a.product-list-item-link[href]')
+                      );
+                      const candidates = cards.length ? cards : productAnchors;
+                      const seen = new Set();
+                      return candidates
+                        .map((node) => {
+                          const anchorNode = node.matches && node.matches('a[href]') ? node : null;
+                          const container =
+                            anchorNode && anchorNode.closest('[class*="product"], [class*="sku"], li, article')
+                              ? anchorNode.closest('[class*="product"], [class*="sku"], li, article')
+                              : node;
+                          return {
+                            title: anchorNode ? clean(anchorNode.innerText || anchorNode.textContent || '') : titleText(node),
+                            href: hrefFor(node),
+                            price: priceText(container || node),
+                          };
+                        })
+                        .filter((item) => {
+                          if (!item.title || !item.href || seen.has(item.href)) {
+                            return false;
+                          }
+                          seen.add(item.href);
+                          return true;
+                        })
                         .slice(0, 8);
                     }
                     """,
@@ -476,7 +507,9 @@ class ActionAPI:
                           'model name': title,
                           'display size': normalizeSpec('screen size', 'display size'),
                           'ram': normalizeSpec('system memory', 'ram', 'memory'),
-                          'storage': normalizeSpec('storage type', 'solid state drive capacity', 'ssd capacity', 'storage capacity'),
+                          'storage':
+                            normalizeSpec('solid state drive capacity', 'ssd capacity', 'storage capacity') ||
+                            normalizeSpec('storage'),
                         },
                       };
                     }

@@ -40,12 +40,23 @@ class BrowserSession:
             return self._page
 
         factory = self._playwright_factory or self._default_playwright_factory
-        self._playwright = factory().start()
-        self._browser = self._playwright.chromium.launch(headless=self.config.headless)
-        self._context = self._browser.new_context()
-        self._page = self._context.new_page()
-        self._page.set_default_timeout(self.config.timeout_ms)
-        return self._page
+        try:
+            self._playwright = factory().start()
+            self._browser = self._playwright.chromium.launch(headless=self.config.headless)
+            self._context = self._browser.new_context()
+            self._page = self._context.new_page()
+            self._page.set_default_timeout(self.config.timeout_ms)
+            return self._page
+        except Exception as exc:
+            try:
+                self.stop()
+            except BrowserSessionError:
+                pass
+            raise BrowserSessionError(
+                "Failed to start Playwright Chromium. "
+                "Confirm dependencies are installed and run 'python -m playwright install chromium'. "
+                f"Original error: {exc}"
+            ) from exc
 
     def stop(self) -> None:
         errors: list[str] = []

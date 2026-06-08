@@ -78,3 +78,34 @@ def test_find_task_by_goal_builds_bestbuy_comparison_task() -> None:
     assert task.steps[2].args["target"] == "bestbuy_search_results"
     assert task.steps[5].args["target"] == "bestbuy_product_facts"
     assert task.steps[10].args["target"] == "bestbuy_price"
+
+
+def test_find_task_by_goal_builds_bestbuy_comparison_task_from_multiline_goal() -> None:
+    task = find_task_by_goal(
+        "Compare Best Buy laptops by price,\n"
+        "  display size, RAM, and storage and export to\n"
+        "  csv"
+    )
+
+    assert task is not None
+    assert task.task_id == "bestbuy-laptop-comparison"
+
+
+def test_find_task_by_goal_builds_live_bestbuy_comparison_task() -> None:
+    task = find_task_by_goal(
+        "Compare live Best Buy gaming laptops by price, GPU, display size, RAM, and storage and export to csv"
+    )
+
+    assert task is not None
+    assert task.task_id == "bestbuy-live-comparison"
+    assert task.steps[0].args["url"] == "https://www.bestbuy.com/site/searchpage.jsp?st=gaming+laptops"
+    assert [step.type for step in task.steps] == ["navigate", "wait_for", "extract"]
+    assert task.steps[2].args["target"] == "bestbuy_search_results"
+
+
+def test_find_task_by_goal_caps_live_bestbuy_product_count() -> None:
+    task = find_task_by_goal("Compare live Best Buy top 9 laptops by price and storage and export to csv")
+
+    assert task is not None
+    assert task.steps[0].args["url"] == "https://www.bestbuy.com/site/searchpage.jsp?st=laptops"
+    assert "up to 5 search results" in task.verifier_hint

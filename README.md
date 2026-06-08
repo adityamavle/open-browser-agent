@@ -1,6 +1,6 @@
 # open-browser-agent
 
-`open-browser-agent` is a small browser-use agent kernel for deterministic web tasks.
+`open-browser-agent` is a lightweight browser agent kernel for traceable web task execution.
 
 It is built around a simple loop:
 
@@ -8,25 +8,25 @@ It is built around a simple loop:
 observe -> plan -> act -> verify
 ```
 
-The project is intentionally narrow. It is not trying to be a general autonomous browser on day one. The goal is to provide a clean, inspectable foundation for browser automation where every task runs through structured steps, emits a JSON trace, and can be replayed or debugged after failure.
+Every run moves through structured steps, captures browser observations, verifies the result, and writes a JSON trace that can be inspected or replayed after the run.
 
-## Why This Exists
+## Utility
 
-Most browser-agent demos are hard to debug because the browser state, plan, actions, and verification result are scattered across logs or hidden inside an LLM loop. `open-browser-agent` keeps those pieces explicit.
+Browser-agent runs are much easier to trust when the plan, actions, browser state, artifacts, and verification result are visible. `open-browser-agent` keeps those pieces explicit.
 
 Use it when you want:
 
-- a small Computer Use Agent kernel that is easy to read
-- deterministic browser execution before broad autonomy
-- structured browser actions instead of ad hoc scripts
-- task-specific verification rules
-- replayable traces for debugging and reliability checks
-- a CLI that can run, inspect, replay, and repeatedly test example tasks
+- a CUA kernel that is easy to inspect and extend
+- structured browser actions instead of ad hoc automation scripts
+- task-specific verification rules (eg; explicit success checks for each workflow)
+- replayable traces for debugging
+- CSV and artifact output from browser workflows
+- a CLI that can run, plan, replay, and repeatedly test tasks
 
-## Current Capabilities
+## Capabilities
 
-- Task registry for bundled demo workflows.
-- Playwright-backed browser session wrapper.
+- Task registry for bundled browser workflows.
+- Playwright browser session wrapper.
 - Structured action API: `goto`, `click`, `type`, `press`, `wait_for`, `extract`.
 - Observer that records URL, title, visible text, compact DOM summaries, form state, and optional screenshots.
 - Deterministic executor over a small step schema.
@@ -34,54 +34,57 @@ Use it when you want:
 - JSON trace recorder with pre/post observations around each step.
 - Replay summaries from saved traces.
 - Reliability runner for repeated task execution.
-- Planner interface with the default task registry planner and optional Anthropic planner.
+- Planner interface with a deterministic task-registry planner and optional Anthropic planner.
 - Artifact summaries for research briefs, comparison rows, and CSV exports.
 
 ## Install
-
-### Conda
-
-```powershell
-conda create -n cua_env python=3.11 -y
-conda activate cua_env
-pip install -r requirements.txt
-pip install -e .
-python -m playwright install chromium
-```
-
 ### Virtualenv
 
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 python -m playwright install chromium
 ```
+
+Create a local environment file from the template:
+
+```bash
+cp .env.example .env
+```
+
+The default task-registry planner does not require an API key. To use the Anthropic planner, open `.env` and replace the value after `ANTHROPIC_API_KEY=` with your Anthropic API key:
+
+```env
+ANTHROPIC_API_KEY=your_real_key_here
+```
+
+Keep the variable name exactly as `ANTHROPIC_API_KEY`; only replace `your_real_key_here`.
 
 ## Quickstart
 
 List the bundled examples:
 
-```powershell
+```bash
 oba examples list
 ```
 
 Run a deterministic task:
 
-```powershell
+```bash
 oba run "wiki summary" --trace-dir traces_e2e
 ```
 
 Replay the generated trace:
 
-```powershell
-oba replay traces_e2e\<trace-id>.json
+```bash
+oba replay traces_e2e/<trace-id>.json
 ```
 
 Run a repeated reliability check:
 
-```powershell
+```bash
 oba reliability "wiki summary" --runs 3 --trace-dir traces_e2e
 ```
 
@@ -89,7 +92,7 @@ oba reliability "wiki summary" --runs 3 --trace-dir traces_e2e
 
 The examples utility shows the task IDs and summaries that the default task-registry planner can run without an LLM:
 
-```powershell
+```bash
 oba examples list
 ```
 
@@ -105,7 +108,7 @@ bestbuy-laptop-comparison: Compare two fixture-backed Best Buy laptop product pa
 
 You can pass either a task ID or a supported alias/prompt to `oba run`:
 
-```powershell
+```bash
 oba run "form-fill" --trace-dir traces_e2e
 oba run "table" --trace-dir traces_e2e
 oba run "wiki summary" --trace-dir traces_e2e
@@ -118,7 +121,7 @@ oba run "Compare Best Buy laptops by price, display size, RAM, and storage and e
 
 Runs a public sandbox form workflow, fills known fields, submits the page, and verifies the submitted values appear in the result.
 
-```powershell
+```bash
 oba run "form" --trace-dir traces_e2e
 ```
 
@@ -126,7 +129,7 @@ oba run "form" --trace-dir traces_e2e
 
 Opens a public HTML table demo and extracts table text through the structured action API.
 
-```powershell
+```bash
 oba run "table-scrape" --trace-dir traces_e2e
 ```
 
@@ -134,26 +137,30 @@ oba run "table-scrape" --trace-dir traces_e2e
 
 Navigates to a Wikipedia article, extracts the article summary and citation links, and emits a research brief artifact.
 
-```powershell
+```bash
 oba run "wiki summary" --trace-dir traces_e2e --artifacts summary
 ```
 
 Dynamic Wikipedia prompts are also supported for direct article-style summary requests:
 
-```powershell
+```bash
 oba run "summarize Grace Hopper from Wikipedia" --trace-dir traces_e2e
 oba run "extract the filmography section for Leonardo DiCaprio from Wikipedia" --trace-dir traces_e2e
 ```
 
 ### Best Buy Comparison
 
-Runs a bounded, fixture-backed product-comparison workflow. The first slice focuses on read-only product research: product facts, normalized comparison rows, and CSV export.
+Runs a product-comparison workflow that extracts product facts, normalizes comparison rows, prints a CSV preview, and writes CSV exports.
 
-```powershell
+```bash
 oba run "Compare Best Buy laptops by price, display size, RAM, and storage and export to csv" --trace-dir traces_e2e --artifacts summary
 ```
 
-This workflow is intentionally scoped to extraction and comparison. It does not add items to cart, sign in, choose stores, or enter checkout flows.
+You can also opt into live Best Buy search-result comparison by including `live` in the goal:
+
+```bash
+oba run "Compare live Best Buy top 5 gaming monitors by display size, refresh rate, resolution, and model name and export to csv" --trace-dir traces_e2e --artifacts summary
+```
 
 ## CLI Reference
 
@@ -161,13 +168,13 @@ This workflow is intentionally scoped to extraction and comparison. It does not 
 
 Run a goal or bundled example task.
 
-```powershell
+```bash
 oba run <goal-or-task> [--planner task-registry|anthropic] [--trace-dir traces] [--artifacts none|summary|detailed]
 ```
 
 Examples:
 
-```powershell
+```bash
 oba run "wiki summary" --trace-dir traces_e2e
 oba run "wiki summary" --planner anthropic --artifacts detailed --trace-dir traces_e2e
 oba run "Compare Best Buy laptops by price, display size, RAM, and storage and export to csv" --trace-dir traces_e2e
@@ -177,7 +184,7 @@ oba run "Compare Best Buy laptops by price, display size, RAM, and storage and e
 
 Generate and print structured steps without running the browser.
 
-```powershell
+```bash
 oba plan "wiki summary"
 oba plan "wiki summary" --planner anthropic
 ```
@@ -186,15 +193,15 @@ oba plan "wiki summary" --planner anthropic
 
 Read a saved JSON trace and print a replay summary.
 
-```powershell
-oba replay traces_e2e\<trace-id>.json
+```bash
+oba replay traces_e2e/<trace-id>.json
 ```
 
 ### `oba reliability`
 
 Run the same task repeatedly and report pass/fail reliability, failure reasons, duration, and action coverage.
 
-```powershell
+```bash
 oba reliability "form-fill" --runs 5 --trace-dir traces_e2e
 oba reliability "wiki summary" --runs 3 --trace-dir traces_e2e --stop-on-failure
 ```
@@ -203,7 +210,7 @@ oba reliability "wiki summary" --runs 3 --trace-dir traces_e2e --stop-on-failure
 
 Run the bundled evaluation loop for one task or all tasks.
 
-```powershell
+```bash
 oba eval --runs 3 --trace-dir traces_e2e
 oba eval "wiki summary" --runs 3 --trace-dir traces_e2e
 ```
@@ -212,7 +219,7 @@ oba eval "wiki summary" --runs 3 --trace-dir traces_e2e
 
 Print the bundled example tasks.
 
-```powershell
+```bash
 oba examples list
 ```
 
@@ -249,22 +256,21 @@ artifacts/comparisons/
 
 The default planner is `task-registry`. It maps supported goals onto bundled deterministic plans and does not require an API key.
 
-To enable the Anthropic planner, create a local `.env`:
-
-```powershell
-copy .env.example .env
-```
-
-Then set:
+The `.env.example` file includes the Anthropic planner settings:
 
 ```env
 ANTHROPIC_API_KEY=your_real_key_here
 OBA_ANTHROPIC_MODEL=claude-sonnet-4-6
+OBA_ANTHROPIC_BASE_URL=https://api.anthropic.com/v1/messages
+OBA_ANTHROPIC_VERSION=2023-06-01
+OBA_ANTHROPIC_MAX_TOKENS=1200
 ```
+
+In your local `.env`, keep `ANTHROPIC_API_KEY` as the variable name and put your real key in place of `your_real_key_here`.
 
 Run with:
 
-```powershell
+```bash
 oba plan "wiki summary" --planner anthropic
 oba run "wiki summary" --planner anthropic --trace-dir traces_e2e
 ```
@@ -290,52 +296,28 @@ The codebase is split into a few small modules:
 
 Run tests:
 
-```powershell
+```bash
 conda activate cua_env
 pytest
 ```
 
 Run coverage:
 
-```powershell
+```bash
 conda activate cua_env
 pytest --cov=src/open_browser_agent
 ```
 
 Before treating a workflow as complete, run the task directly and then run reliability:
 
-```powershell
+```bash
 oba run "wiki summary" --trace-dir traces_e2e
 oba reliability "wiki summary" --runs 3 --trace-dir traces_e2e
 ```
 
-## Scope
-
-In scope:
-
-- browser-only automation on Playwright
-- deterministic task plans
-- small structured action API
-- compact observations
-- JSON traces
-- task-specific verification
-- replay and reliability tooling
-- bounded demo workflows
-
-Out of scope for the first iteration:
-
-- broad autonomous browsing
-- login flows
-- CAPTCHAs
-- checkout/account mutation flows
-- long-horizon planning
-- multi-agent orchestration
-- desktop automation
-- memory systems or retrieval-heavy agents
-
 ## Project Direction
 
-The current product direction is to keep the kernel small and reliable, then expand through thin vertical slices:
+The project direction is to keep the kernel reliable and expand through focused vertical slices:
 
 1. Make deterministic bundled workflows excellent.
 2. Keep traces useful enough to debug failures.

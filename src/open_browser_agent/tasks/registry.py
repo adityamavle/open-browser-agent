@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import quote, unquote
+from urllib.parse import quote, quote_plus, unquote
 
 from open_browser_agent.comparison import parse_comparison_intent
 from open_browser_agent.schemas.step import Step
@@ -33,6 +33,7 @@ WIKIPEDIA_URL_PATTERN = re.compile(r"https?://en\.wikipedia\.org/wiki/(?P<slug>[
 BESTBUY_SEARCH_FIXTURE_URL = _fixture_url("bestbuy_search_results.html")
 BESTBUY_MACBOOK_AIR_FIXTURE_URL = _fixture_url("bestbuy_macbook_air_13.html")
 BESTBUY_SURFACE_LAPTOP_FIXTURE_URL = _fixture_url("bestbuy_surface_laptop_13.html")
+BESTBUY_SEARCH_URL_TEMPLATE = "https://www.bestbuy.com/site/searchpage.jsp?st={query}"
 
 
 TASKS: list[TaskSpec] = [
@@ -176,6 +177,38 @@ def _build_bestbuy_comparison_task(goal: str) -> TaskSpec | None:
         return None
 
     columns = comparison_intent.requested_columns or ["price", "display size", "RAM", "storage"]
+    if _is_live_bestbuy_goal(lowered):
+        product_count = _extract_bestbuy_product_count(lowered)
+        search_query = _bestbuy_search_query(comparison_intent.subject)
+        steps = [
+            Step(
+                id="goto-bestbuy-live-search",
+                type="navigate",
+                args={"url": BESTBUY_SEARCH_URL_TEMPLATE.format(query=quote_plus(search_query))},
+                timeout_ms=20_000,
+            ),
+            Step(
+                id="wait-bestbuy-live-search-results",
+                type="wait_for",
+                args={"selector": "a.sku-title[href], a.product-list-item-link[href], [data-testid='sku-card'], .sku-item"},
+                timeout_ms=20_000,
+            ),
+            Step(id="extract-bestbuy-live-search-results", type="extract", args={"target": "bestbuy_search_results"}),
+        ]
+        return TaskSpec(
+            task_id="bestbuy-live-comparison",
+            summary=f"Compare the first {product_count} live Best Buy search results for {search_query}.",
+            steps=steps,
+            verifier_hint=(
+                f"Search live Best Buy for {search_query}, compare up to {product_count} search results, "
+                f"and produce normalized comparison rows for columns: {', '.join(columns)}."
+            ),
+            verification_rules=[
+                VerificationRule(kind="artifact_exists", value="comparison", label="comparison artifact"),
+                VerificationRule(kind="artifact_list_min_length", value={"path": "comparison.rows", "min": 2}, label="comparison rows"),
+            ],
+        )
+
     verifier_hint = (
         "Compare the two fixed Best Buy laptop fixtures and produce normalized comparison rows"
         f" for columns: {', '.join(columns)}."
@@ -191,6 +224,26 @@ def _build_bestbuy_comparison_task(goal: str) -> TaskSpec | None:
             VerificationRule(kind="artifact_list_min_length", value={"path": "comparison.rows", "min": 2}, label="comparison rows"),
         ],
     )
+
+
+def _is_live_bestbuy_goal(lowered_goal: str) -> bool:
+    return "live" in lowered_goal or "real best buy" in lowered_goal or "bestbuy.com" in lowered_goal
+
+
+def _extract_bestbuy_product_count(lowered_goal: str) -> int:
+    match = re.search(r"\b(?:top|first)\s+(\d+)\b", lowered_goal)
+    if match is None:
+        return 3
+    return max(2, min(int(match.group(1)), 5))
+
+
+def _bestbuy_search_query(subject: str) -> str:
+    cleaned = re.sub(r"\bbest\s*buy\b", " ", subject, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bbestbuy\b", " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\blive\b", " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b(?:top|first)\s+\d+\b", " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" .")
+    return cleaned or "laptops"
 
 
 def _build_dynamic_wikipedia_section_task(goal: str) -> TaskSpec | None:

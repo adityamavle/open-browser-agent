@@ -213,7 +213,7 @@ class AnthropicComparisonRowSynthesizer:
 
 
 def infer_output_mode(goal: str) -> str:
-    lowered = goal.strip().lower()
+    lowered = _normalize_goal_text(goal).lower()
     if not lowered:
         return "text"
     for pattern in _CSV_REQUEST_PATTERNS:
@@ -289,7 +289,7 @@ def load_local_dotenv(path: str = ".env") -> None:
 
 
 def _strip_output_clauses(goal: str) -> str:
-    cleaned = goal.strip()
+    cleaned = _normalize_goal_text(goal)
     patterns = (
         r"\s+and (?:save|export|write|output).*$",
         r"\s+(?:save|export|write|output) .*$",
@@ -299,3 +299,7 @@ def _strip_output_clauses(goal: str) -> str:
     for pattern in patterns:
         cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
     return cleaned.strip()
+
+
+def _normalize_goal_text(goal: str) -> str:
+    return re.sub(r"\s+", " ", goal).strip()

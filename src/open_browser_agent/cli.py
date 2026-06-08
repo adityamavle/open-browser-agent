@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 import json
 import re
 from dataclasses import dataclass, field
@@ -637,6 +638,12 @@ def _build_comparison_artifact(
         return None
 
     raw_rows = _build_comparison_rows(extract_sequence, requested_columns=comparison_intent.requested_columns)
+    if not raw_rows and task_id == "bestbuy-live-comparison":
+        raw_rows = _build_bestbuy_search_result_rows(
+            extract_sequence=extract_sequence,
+            requested_columns=comparison_intent.requested_columns,
+            goal=goal,
+        )
     if not raw_rows:
         return None
 
@@ -788,6 +795,8 @@ def _build_comparison_rows(
     rows: list[dict[str, object]] = []
     for url in page_order:
         raw_row = page_rows[url]
+        if _is_search_results_only_row(raw_row):
+            continue
         row: dict[str, object] = {
             "entity_name": raw_row["entity_name"],
             "article_url": raw_row["article_url"],
@@ -803,6 +812,151 @@ def _build_comparison_rows(
                     row[key] = raw_row[key]
         rows.append(row)
     return rows
+
+
+def _is_search_results_only_row(row: dict[str, object]) -> bool:
+    comparison_data_keys = set(row) - {"entity_name", "article_url", "search_results"}
+    return "search_results" in row and not comparison_data_keys
+
+
+def _build_bestbuy_search_result_rows(
+    extract_sequence: list[dict[str, Any]],
+    requested_columns: list[str],
+    goal: str,
+) -> list[dict[str, object]]:
+    search_results = _latest_search_results(extract_sequence)
+    if not search_results:
+        return []
+    limit = _bestbuy_live_result_limit(goal)
+    normalized_requested = {_normalize_column_name(column): column for column in requested_columns}
+    ranked_rows: list[dict[str, object]] = []
+    for item in search_results:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or "").strip()
+        href = str(item.get("href") or "").strip()
+        if not title or not href:
+            continue
+        ranked_rows.append(_bestbuy_search_result_facts(title=title, href=href, price=str(item.get("price") or "").strip()))
+    ranked_rows.sort(
+        key=lambda row: _bestbuy_search_row_score(row=row, requested_columns=requested_columns, goal=goal),
+        reverse=True,
+    )
+
+    rows: list[dict[str, object]] = []
+    for raw_row in ranked_rows[:limit]:
+        row: dict[str, object] = {
+            "entity_name": raw_row["entity_name"],
+            "article_url": raw_row["article_url"],
+        }
+        if requested_columns:
+            for normalized, original in normalized_requested.items():
+                matched = _match_requested_column(raw_row, normalized)
+                if matched is not None:
+                    row[original] = matched
+        else:
+            for key in ("price", "model name", "display size", "ram", "storage", "gpu"):
+                if key in raw_row:
+                    row[key] = raw_row[key]
+        rows.append(row)
+    return rows
+
+
+def _latest_search_results(extract_sequence: list[dict[str, Any]]) -> list[dict[str, object]]:
+    for item in reversed(extract_sequence):
+        if str(item.get("target") or "") != "bestbuy_search_results":
+            continue
+        value = item.get("value")
+        if isinstance(value, list):
+            return [entry for entry in value if isinstance(entry, dict)]
+    return []
+
+
+def _bestbuy_live_result_limit(goal: str) -> int:
+    match = re.search(r"\b(?:top|first)\s+(\d+)\b", goal.lower())
+    if match is None:
+        return 3
+    return max(2, min(int(match.group(1)), 5))
+
+
+def _bestbuy_search_result_facts(title: str, href: str, price: str = "") -> dict[str, object]:
+    row: dict[str, object] = {
+        "entity_name": title,
+        "article_url": href,
+        "model name": title,
+    }
+    if price:
+        row["price"] = price
+    display_size = _first_match(title, r"(\d+(?:\.\d+)?)\s*(?:\"|inch|in\b)")
+    if display_size:
+        row["display size"] = f"{display_size} inches"
+    ram = _first_match(title, r"(\d+)\s*(?:GB|gigabytes)\s*(?:RAM|Memory|DDR\d?)")
+    if ram:
+        row["ram"] = f"{ram}GB"
+    storage = _first_match(title, r"(\d+(?:\.\d+)?)\s*(TB|GB|gigabytes)\s*(?:SSD|Storage)")
+    if storage:
+        row["storage"] = _normalize_capacity(storage)
+    refresh_rate = _first_match(title, r"(\d+(?:\.\d+)?)\s*Hz")
+    if refresh_rate:
+        row["refresh rate"] = f"{refresh_rate}Hz"
+    resolution = _bestbuy_resolution_from_title(title)
+    if resolution:
+        row["resolution"] = resolution
+    gpu = _first_match(
+        title,
+        r"((?:NVIDIA|GeForce|RTX|GTX|AMD Radeon|Radeon)[A-Za-z0-9\s\-]+?)(?:\s+-|\s+\d+(?:GB|TB)|$)",
+    )
+    if gpu:
+        row["gpu"] = " ".join(gpu.split())
+    return row
+
+
+def _bestbuy_search_row_score(row: dict[str, object], requested_columns: list[str], goal: str) -> int:
+    score = 0
+    for column in requested_columns:
+        if _match_requested_column(row, _normalize_column_name(column)) not in (None, ""):
+            score += 10
+    title = str(row.get("entity_name") or "").lower()
+    if "gaming" in goal.lower() and "gaming" in title:
+        score += 5
+    if "laptop" in title:
+        score += 1
+    return score
+
+
+def _first_match(text: str, pattern: str) -> str:
+    match = re.search(pattern, text, flags=re.IGNORECASE)
+    if match is None:
+        return ""
+    return " ".join(part for part in match.groups() if part).strip()
+
+
+def _normalize_capacity(value: str) -> str:
+    normalized = re.sub(r"\s+", " ", value).strip()
+    normalized = re.sub(r"\bGB\b", "GB", normalized, flags=re.IGNORECASE)
+    normalized = re.sub(r"\bTB\b", "TB", normalized, flags=re.IGNORECASE)
+    return normalized
+
+
+def _bestbuy_resolution_from_title(title: str) -> str:
+    explicit = _first_match(title, r"(\d{3,4}\s*x\s*\d{3,4})")
+    if explicit:
+        return explicit.replace(" ", "")
+    normalized = title.lower()
+    resolution_terms = (
+        ("ultra-wqhd", "Ultra-WQHD"),
+        ("wqhd", "WQHD"),
+        ("qhd", "QHD"),
+        ("uhd", "UHD"),
+        ("4k", "4K"),
+        ("2k", "2K"),
+        ("fhd", "FHD"),
+        ("full hd", "Full HD"),
+    )
+    for needle, label in resolution_terms:
+        if needle in normalized:
+            return label
+    return ""
 
 
 def _entity_name_from_page_title(page_title: str, url: str) -> str:
@@ -878,6 +1032,12 @@ def _merge_bestbuy_product_facts(row: dict[str, object], value: dict[str, object
                 row.setdefault("display size", spec_value)
             elif normalized_key.startswith("system memory") or normalized_key == "ram":
                 row.setdefault("ram", spec_value)
+            elif (
+                normalized_key.startswith("solid state drive capacity")
+                or normalized_key.startswith("ssd capacity")
+                or normalized_key.startswith("storage capacity")
+            ):
+                row["storage"] = spec_value
             elif "storage" in normalized_key or "ssd" in normalized_key:
                 row.setdefault("storage", spec_value)
 
@@ -989,9 +1149,36 @@ def _print_comparison_artifact(comparison: dict[str, object], mode: str = "summa
     if isinstance(rows, list) and rows:
         row_preview = rows if mode == "detailed" else rows[:3]
         print(f"  - rows: {json.dumps(row_preview, ensure_ascii=False)}")
+        csv_preview = _comparison_csv_preview(comparison, max_rows=10)
+        if csv_preview:
+            print("  - csv_preview:")
+            for line in csv_preview.splitlines():
+                print(f"    {line}")
     csv_path = comparison.get("csv_path")
     if csv_path:
         print(f"  - csv_path: {csv_path}")
+
+
+def _comparison_csv_preview(comparison: dict[str, object], max_rows: int = 10) -> str:
+    rows = comparison.get("rows")
+    columns = comparison.get("columns")
+    if not isinstance(rows, list) or not rows:
+        return ""
+    if not isinstance(columns, list) or not columns:
+        return ""
+    fieldnames = ["entity_name", *[str(column) for column in columns], "article_url"]
+    handle = io.StringIO()
+    writer = csv.DictWriter(handle, fieldnames=fieldnames)
+    writer.writeheader()
+    written = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        writer.writerow({name: row.get(name, "") for name in fieldnames})
+        written += 1
+        if written >= max_rows:
+            break
+    return handle.getvalue().strip()
 
 
 def _build_action_stats(results: list) -> dict[str, dict[str, int]]:

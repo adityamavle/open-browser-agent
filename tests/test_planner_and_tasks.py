@@ -55,6 +55,16 @@ def test_planner_builds_bestbuy_comparison_steps() -> None:
     assert plan.verification_rules[0].value == "comparison"
 
 
+def test_planner_builds_live_bestbuy_comparison_steps() -> None:
+    planner = Planner()
+    plan = planner.plan("Compare live Best Buy gaming laptops by price, GPU, display size, RAM, and storage and export to csv")
+
+    assert plan.task_id == "bestbuy-live-comparison"
+    assert plan.steps[0].args["url"] == "https://www.bestbuy.com/site/searchpage.jsp?st=gaming+laptops"
+    assert [step.type for step in plan.steps] == ["navigate", "wait_for", "extract"]
+    assert plan.steps[2].args["target"] == "bestbuy_search_results"
+
+
 def test_planner_raises_for_missing_goal() -> None:
     planner = Planner()
 
@@ -82,6 +92,39 @@ def test_planner_validates_provider_steps() -> None:
     assert plan.provider_name == "dict-provider"
     assert plan.steps[0].id == "s1"
     assert plan.steps[0].timeout_ms == 2222
+
+
+def test_planner_prefers_canonical_task_id_and_rules_for_bundled_goal() -> None:
+    class CustomBundledProvider:
+        name = "custom-bundled-provider"
+
+        def plan(self, request) -> ProviderPlan:
+            _ = request
+            return ProviderPlan(
+                steps=[
+                    {"id": "s1", "type": "navigate", "args": {"url": "https://en.wikipedia.org/wiki/Ada_Lovelace"}},
+                    {"id": "s2", "type": "wait_for", "args": {"selector": "main"}},
+                    {"id": "s3", "type": "extract", "args": {"target": "summary"}},
+                    {"id": "s4", "type": "extract", "args": {"target": "citation_links"}},
+                ],
+                task_id="wikipedia-summary-ada-lovelace",
+                verification_rules=[
+                    {
+                        "kind": "artifact_list_min_length",
+                        "value": {"path": "extracts.citation_links", "min": 1},
+                        "label": "citation links",
+                    }
+                ],
+            )
+
+    plan = Planner(provider=CustomBundledProvider()).plan("wiki summary")
+
+    assert plan.task_id == "wikipedia-summary"
+    assert [rule.kind for rule in plan.verification_rules] == [
+        "url_contains",
+        "artifact_exists",
+        "artifact_list_min_length",
+    ]
 
 
 def test_planner_rejects_invalid_provider_steps() -> None:
@@ -125,6 +168,28 @@ def test_planner_rejects_unsupported_extract_args() -> None:
         assert "target" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("Expected PlannerError")
+
+
+def test_anthropic_provider_ignores_malformed_optional_verification_rule() -> None:
+    provider = AnthropicPlannerProvider(api_key="test-key", model="claude-sonnet-4-6")
+
+    rules = provider._coerce_verification_rules(
+        [
+            {
+                "kind": "artifact_text_contains",
+                "value": "extracts.summary",
+                "label": "summary text",
+            },
+            {
+                "kind": "artifact_list_min_length",
+                "value": {"path": "extracts.citation_links", "min": 1},
+                "label": "citation links",
+            },
+        ]
+    )
+
+    assert len(rules) == 1
+    assert rules[0].kind == "artifact_list_min_length"
 
 
 def test_planner_coerces_string_expected_to_description_dict() -> None:

@@ -23,6 +23,7 @@ ALLOWED_STEP_ARGS: dict[str, set[str]] = {
     "press": {"keys"},
     "wait_for": {"selector"},
     "extract": {"target"},
+    "navigate_extracted_result": {"source_target", "index", "url_field"},
 }
 
 REQUIRED_STEP_ARGS: dict[str, set[str]] = {
@@ -33,12 +34,13 @@ REQUIRED_STEP_ARGS: dict[str, set[str]] = {
     "press": {"keys"},
     "wait_for": {"selector"},
     "extract": {"target"},
+    "navigate_extracted_result": {"source_target", "index"},
 }
 
 ANTHROPIC_PLANNER_SYSTEM_PROMPT = (
     "You are a planner for a deterministic browser agent. "
     "Return JSON only. "
-    "You may only use the step types: navigate, goto, click, type, press, wait_for, extract. "
+    "You may only use the step types: navigate, goto, click, type, press, wait_for, extract, navigate_extracted_result. "
     "Each step must contain id, type, args, expected, timeout_ms. "
     "args must be a JSON object. "
     "expected must be a JSON object; use {} if you do not need it. "
@@ -50,7 +52,8 @@ ANTHROPIC_PLANNER_SYSTEM_PROMPT = (
     "type => {selector, text}; "
     "press => {keys}; "
     "wait_for => {selector}; "
-    "extract => {target}. "
+    "extract => {target}; "
+    "navigate_extracted_result => {source_target, index, url_field}. "
     "For extract you must use target, never selector, attribute, artifact_name, schema, fields, or limit. "
     "Valid extract targets are either a supported logical target such as 'summary' or 'table', or an explicit CSS selector string already implied by the task. "
     "If the goal matches a known bundled task, preserve the bundled task intent and do not substitute a different topic, destination URL, or extract target. "
@@ -60,7 +63,7 @@ ANTHROPIC_PLANNER_SYSTEM_PROMPT = (
 )
 
 ANTHROPIC_PLANNER_USER_PROMPT_LINES = (
-    "Allowed step types: navigate, goto, click, type, press, wait_for, extract",
+    "Allowed step types: navigate, goto, click, type, press, wait_for, extract, navigate_extracted_result",
     "Return a JSON object with keys: task_id, verifier_hint, verification_rules, metadata, steps.",
     "verification_rules is optional and should be a list of objects with keys: kind, value, label. Use [] if unsure.",
     "expected must always be an object, never a string.",
@@ -116,7 +119,8 @@ WIKIPEDIA_COMPARISON_PLANNER_HINTS = (
 BESTBUY_COMPARISON_PLANNER_HINTS = (
     "For Best Buy comparison tasks, stay within Best Buy search results and product detail pages only.",
     "Use the existing Best Buy extract targets that the runtime supports: bestbuy_search_results, bestbuy_product_facts, and bestbuy_price.",
-    "Prefer a compact plan: open the relevant product pages, extract product facts, and synthesize the comparison artifact after execution.",
+    "For live Best Buy search, use navigate_extracted_result with source_target='bestbuy_search_results', index starting at 0, and url_field='href' to visit products discovered at runtime.",
+    "Prefer a compact plan: open search results, extract result URLs, visit a capped number of product pages, extract product facts, and synthesize the comparison artifact after execution.",
     "Do not add cart, sign-in, shipping, store-selection, or checkout steps.",
     "For Best Buy comparison tasks, prefer task_id 'bestbuy-laptop-comparison' when the goal is a bounded laptop comparison demo.",
 )

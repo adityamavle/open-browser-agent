@@ -314,6 +314,47 @@ def test_print_run_report_detailed_artifacts(capsys) -> None:
     assert "Line one.\nLine two." in output
 
 
+def test_print_run_report_includes_comparison_csv_preview(capsys) -> None:
+    rows = [
+        {
+            "entity_name": f"Laptop {index}",
+            "price": f"${index}",
+            "storage": "512 GB",
+            "article_url": f"https://example.com/{index}",
+        }
+        for index in range(12)
+    ]
+    outcome = cli.RunOutcome(
+        success=True,
+        reason="All verification rules passed.",
+        trace_path=Path("trace.json"),
+        task_id="bestbuy-live-comparison",
+        duration_ms=123,
+        planner_provider="task-registry",
+        artifacts={
+            "comparison": {
+                "subject": "live Best Buy laptops",
+                "output_mode": "csv",
+                "columns": ["price", "storage"],
+                "rows": rows,
+                "csv_path": "/tmp/laptops.csv",
+            }
+        },
+    )
+
+    cli._print_run_report("compare laptops", outcome, artifacts_mode="summary")
+    output = capsys.readouterr().out
+
+    assert "  - csv_preview:" in output
+    assert "    entity_name,price,storage,article_url" in output
+    preview_lines = [
+        line
+        for line in output.splitlines()
+        if line.startswith("    Laptop ") or line.startswith("    entity_name,")
+    ]
+    assert len(preview_lines) == 11
+
+
 def test_build_run_artifacts_includes_wikipedia_research_brief() -> None:
     observation = Observation(
         url="https://en.wikipedia.org/wiki/Grace_Hopper",
@@ -679,6 +720,19 @@ def test_build_comparison_artifact_supports_bestbuy_product_facts() -> None:
         observation=observation,
         extract_sequence=[
             {
+                "step_id": "search-results",
+                "target": "bestbuy_search_results",
+                "value": [
+                    {
+                        "title": "Apple MacBook Air 13-inch Laptop - M4 chip - 16GB Memory - 512GB SSD",
+                        "href": "file:///bestbuy_macbook_air_13.html",
+                        "price": "$1,099.00",
+                    }
+                ],
+                "current_url": "file:///bestbuy_search_results.html",
+                "page_title": "Best Buy Search Results - Laptops",
+            },
+            {
                 "step_id": "macbook-facts",
                 "target": "bestbuy_product_facts",
                 "value": {
@@ -722,11 +776,12 @@ def test_build_comparison_artifact_supports_bestbuy_product_facts() -> None:
                         "model name": "Microsoft Surface Laptop 13-inch - Snapdragon X Plus - 16GB Memory - 512GB SSD",
                         "display size": "13 inches",
                         "ram": "16 gigabytes",
-                        "storage": "512 gigabytes",
+                        "storage": "SSD",
                     },
                     "specifications": {
                         "Display Size": "13 inches",
                         "System Memory (RAM)": "16 gigabytes",
+                        "Storage Type": "SSD",
                         "Solid State Drive Capacity": "512 gigabytes",
                     },
                 },
@@ -748,10 +803,103 @@ def test_build_comparison_artifact_supports_bestbuy_product_facts() -> None:
     assert artifact["output_mode"] == "csv"
     assert artifact["isLLMReProcessingRequired"] is False
     assert artifact["columns"] == ["price", "display size", "RAM", "storage"]
-    assert artifact["rows"][0]["entity_name"].startswith("Apple MacBook Air")
-    assert artifact["rows"][0]["price"] == "$1,099.00"
-    assert artifact["rows"][0]["display size"] == "13.6 inches"
-    assert artifact["rows"][1]["RAM"] == "16 gigabytes"
+    assert len(artifact["rows"]) == 2
+    for row in artifact["rows"]:
+        assert row["entity_name"]
+        assert row["article_url"]
+        assert row["price"]
+        assert row["display size"]
+        assert row["RAM"]
+        assert row["storage"]
+
+
+def test_build_comparison_artifact_supports_live_bestbuy_search_results() -> None:
+    observation = SimpleNamespace(
+        url="https://www.bestbuy.com/site/searchpage.jsp?id=pcat17071&st=gaming+laptops",
+        title="gaming laptops - Best Buy",
+    )
+    artifact = cli._build_comparison_artifact(
+        task_id="bestbuy-live-comparison",
+        goal="Compare live Best Buy gaming laptops by price, GPU, display size, RAM, and storage and export to csv",
+        observation=observation,
+        extract_sequence=[
+            {
+                "step_id": "search-results",
+                "target": "bestbuy_search_results",
+                "value": [
+                    {
+                        "title": "Lenovo - IdeaPad Slim 3 15.6\" Full HD Touchscreen Laptop - 16GB Memory - 512GB SSD",
+                        "href": "https://www.bestbuy.com/product/lenovo/example",
+                        "price": "$599.99",
+                    },
+                    {
+                        "title": "Alienware - 16X Aurora 16\" 2.5K Gaming Laptop Intel Core Ultra 9 32GB Memory NVIDIA GeForce RTX 5060 1TB Storage",
+                        "href": "https://www.bestbuy.com/product/alienware/example",
+                        "price": "$1,499.99",
+                    },
+                    {
+                        "title": "HP - Victus 15.6\" 144Hz Full HD Gaming Laptop - 16GB Memory - NVIDIA GeForce RTX 4050 - 512GB SSD",
+                        "href": "https://www.bestbuy.com/product/hp-victus/example",
+                        "price": "$899.99",
+                    },
+                ],
+                "current_url": "https://www.bestbuy.com/site/searchpage.jsp?id=pcat17071&st=gaming+laptops",
+                "page_title": "gaming laptops - Best Buy",
+            }
+        ],
+        plan_metadata={"mode": "task_lookup"},
+    )
+
+    assert artifact is not None
+    assert artifact["columns"] == ["price", "GPU", "display size", "RAM", "storage"]
+    assert len(artifact["rows"]) == 3
+    assert all(row["entity_name"] for row in artifact["rows"])
+    assert all(row["article_url"] for row in artifact["rows"])
+    assert any(row.get("GPU") for row in artifact["rows"])
+    assert any(row.get("display size") for row in artifact["rows"])
+    assert any(row.get("RAM") for row in artifact["rows"])
+    assert any(row.get("storage") for row in artifact["rows"])
+
+
+def test_build_comparison_artifact_parses_live_bestbuy_monitor_fields() -> None:
+    observation = SimpleNamespace(
+        url="https://www.bestbuy.com/site/searchpage.jsp?id=pcat17071&st=gaming+monitors",
+        title="gaming monitors - Best Buy",
+    )
+    artifact = cli._build_comparison_artifact(
+        task_id="bestbuy-live-comparison",
+        goal="Compare live Best Buy top 5 gaming monitors by display size, refresh rate, resolution, and model name and export to csv",
+        observation=observation,
+        extract_sequence=[
+            {
+                "step_id": "search-results",
+                "target": "bestbuy_search_results",
+                "value": [
+                    {
+                        "title": "Example - 27\" LED FHD Gaming Monitor 180Hz 1ms - Black",
+                        "href": "https://www.bestbuy.com/product/example-monitor",
+                        "price": "",
+                    },
+                    {
+                        "title": "Example - 32\" Dual Mode 4K 240Hz FHD 480Hz OLED Gaming Monitor",
+                        "href": "https://www.bestbuy.com/product/example-monitor-2",
+                        "price": "",
+                    },
+                ],
+                "current_url": "https://www.bestbuy.com/site/searchpage.jsp?id=pcat17071&st=gaming+monitors",
+                "page_title": "gaming monitors - Best Buy",
+            }
+        ],
+        plan_metadata={"mode": "task_lookup"},
+    )
+
+    assert artifact is not None
+    assert artifact["columns"] == ["display size", "refresh rate", "resolution", "model name"]
+    assert len(artifact["rows"]) == 2
+    assert all(row["display size"] for row in artifact["rows"])
+    assert all(row["refresh rate"] for row in artifact["rows"])
+    assert all(row["resolution"] for row in artifact["rows"])
+    assert all(row["model name"] for row in artifact["rows"])
 
 
 def test_build_run_artifacts_writes_csv_for_comparison_output(monkeypatch, tmp_path: Path) -> None:

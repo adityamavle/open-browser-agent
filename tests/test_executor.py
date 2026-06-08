@@ -94,6 +94,57 @@ def test_executor_run_steps_returns_all_results() -> None:
     assert results[1].action_result.details["value"] == "item text"
 
 
+def test_executor_navigates_to_extracted_result() -> None:
+    class SearchPage(FakePage):
+        def locator(self, selector: str) -> FakeLocator:
+            if selector == "body":
+                return FakeLocator(self.body_text)
+            return super().locator(selector)
+
+        def evaluate(self, script: str):
+            if "document.querySelectorAll('[data-testid=\"sku-card\"], .sku-item, li.sku-item')" in script:
+                return [
+                    {"title": "Laptop One", "href": "https://www.bestbuy.com/site/laptop-one/111.p"},
+                    {"title": "Laptop Two", "href": "https://www.bestbuy.com/site/laptop-two/222.p"},
+                ]
+            return []
+
+    page = SearchPage()
+    executor = Executor(actions=ActionAPI(lambda: page))
+
+    results = executor.run_steps(
+        [
+            Step(id="extract-results", type="extract", args={"target": "bestbuy_search_results"}),
+            Step(
+                id="goto-second-result",
+                type="navigate_extracted_result",
+                args={"source_target": "bestbuy_search_results", "index": 1, "url_field": "href"},
+            ),
+        ]
+    )
+
+    assert [result.success for result in results] == [True, True]
+    assert page.url == "https://www.bestbuy.com/site/laptop-two/222.p"
+    assert results[1].action_result is not None
+    assert results[1].action_result.details["source_target"] == "bestbuy_search_results"
+
+
+def test_executor_reports_missing_extracted_result() -> None:
+    executor = Executor(actions=ActionAPI(lambda: FakePage()))
+
+    result = executor.run_step(
+        Step(
+            id="goto-missing-result",
+            type="navigate_extracted_result",
+            args={"source_target": "bestbuy_search_results", "index": 0},
+        )
+    )
+
+    assert result.success is False
+    assert result.action_result is not None
+    assert result.action_result.error_code == "missing_extract"
+
+
 def test_executor_run_steps_stops_after_first_failure() -> None:
     class BrokenPage(FakePage):
         def click(self, selector: str) -> None:

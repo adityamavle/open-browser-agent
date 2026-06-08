@@ -60,6 +60,19 @@ def test_parse_comparison_intent_extracts_subject_columns_and_output_mode() -> N
     assert intent.output_mode == "csv"
 
 
+def test_parse_comparison_intent_normalizes_multiline_goal() -> None:
+    intent = parse_comparison_intent(
+        "Compare Best Buy laptops by price,\n"
+        "  display size, RAM, and storage and export to\n"
+        "  csv"
+    )
+
+    assert intent is not None
+    assert intent.subject == "Best Buy laptops"
+    assert intent.requested_columns == ["price", "display size", "RAM", "storage"]
+    assert intent.output_mode == "csv"
+
+
 def test_parse_comparison_intent_returns_none_for_non_comparison_goal() -> None:
     assert parse_comparison_intent("summarize Grace Hopper from Wikipedia") is None
 
